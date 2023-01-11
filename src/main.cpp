@@ -38,9 +38,8 @@ void setup(void) {
 void loop() {
   DateTime now = rtc.now();
 
-  tft.fillRect(0, 0, tft.width(), 8, TFT_BLACK);
   tft.setCursor(0, 0);
-  tft.printf("%d/%d/%d %.2d:%.2d:%.2d", now.year(), now.month(), now.day(),
+  tft.printf("%d/%d/%d %.2d:%.2d:%.2d  ", now.year(), now.month(), now.day(),
              now.hour(), now.minute(), now.second());
 
   delay(1000);
