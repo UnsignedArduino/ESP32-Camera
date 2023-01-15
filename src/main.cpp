@@ -1,10 +1,12 @@
 #include <Arduino.h>
 #include <RTClib.h>
-#include <SPI.h>
+#include <SPI.h>  // Needed by TFT_eSPI
 #include <SdFat.h>
 #include <TFT_eSPI.h>
 #include <ArduCAM.h>
-#include <memorysaver.h>
+#include <memorysaver.h>  // Needed by ArduCAM
+#include <SD.h>           // Needed by JPEGDEC because it needs "File"
+#include <JPEGDEC.h>
 
 const uint8_t SD_CS = 16;
 const uint8_t CAM_CS = 5;
@@ -15,27 +17,11 @@ TFT_eSPI tft = TFT_eSPI();
 SdFs sd;
 ArduCAM camera(OV2640, CAM_CS);
 
-void printDirectory(FsFile dir, uint16_t numTabs) {
-  while (true) {
-    FsFile entry = dir.openNextFile();
-    if (!entry) {
-      break;
-    }
-    for (uint8_t i = 0; i < numTabs; i++) {
-      tft.print("  ");
-    }
-    char name[255] = {};
-    entry.getName(name, 255);
-    tft.print(name);
-    if (entry.isDirectory()) {
-      tft.println("/");
-      printDirectory(entry, numTabs + 1);
-    } else {
-      tft.printf(" (%lu)\n", entry.size());
-    }
-    entry.close();
-  }
-}
+// 160 * 120 * 12 / 8 = 28800 bytes needed
+// https://stackoverflow.com/a/2734699/10291933
+const uint32_t PREVIEW_BUF_SIZE = 160 * 120 * 12 / 8;
+uint8_t previewBuf[PREVIEW_BUF_SIZE];
+JPEGDEC jpeg;
 
 bool cameraBegin() {
   Serial.println("Preparing camera...");
@@ -44,7 +30,6 @@ bool cameraBegin() {
 
   SPI.begin();
   SPI.setFrequency(8000000);
-
   pinMode(CAM_CS, OUTPUT);
   pinMode(CAM_MISO_TRISTATE, OUTPUT);
   digitalWrite(CAM_MISO_TRISTATE, HIGH);
@@ -65,7 +50,7 @@ bool cameraBegin() {
   Serial.print("Checking camera presence...");
 
   uint8_t vid, pid;
-  camera.wrSensorReg8_8(0xff, 0x01);
+  camera.wrSensorReg8_8(0xFF, 0x01);
   camera.rdSensorReg8_8(OV2640_CHIPID_HIGH, &vid);
   camera.rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
   if ((vid != 0x26) && ((pid != 0x41) || (pid != 0x42))) {
@@ -82,6 +67,7 @@ bool cameraBegin() {
   camera.set_format(JPEG);
   camera.InitCAM();
   camera.OV2640_set_JPEG_size(OV2640_160x120);
+  camera.OV2640_set_Light_Mode(Auto);
   camera.clear_fifo_flag();
 
   digitalWrite(CAM_MISO_TRISTATE, LOW);
@@ -91,52 +77,57 @@ bool cameraBegin() {
   return true;
 }
 
-void cameraCapture() {
+size_t cameraCaptureToMemory(uint8_t* dest, size_t destSize) {
+  digitalWrite(CAM_MISO_TRISTATE, HIGH);
+  SPI.setFrequency(8000000);
+
   Serial.println("Starting capture");
 
-  digitalWrite(CAM_MISO_TRISTATE, HIGH);
-
+  camera.flush_fifo();
   camera.clear_fifo_flag();
   camera.start_capture();
-
   while (!camera.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
     ;
   }
-
-  size_t len = camera.read_fifo_length();
-  if (len >= 0x07ffff) {
-    Serial.println("Image over size");
-    return;
+  uint32_t len = camera.read_fifo_length();
+  if (len >= MAX_FIFO_SIZE) {
+    Serial.printf("FIFO oversized (%lu >= %lu)\n", len, MAX_FIFO_SIZE);
+    return -1;
   } else if (len == 0) {
-    Serial.println("Image size is 0");
-    return;
+    Serial.println("FIFO size is 0");
+    return -1;
+  } else if (len > destSize) {
+    Serial.println("FIFO size bigger than destination buffer");
+    return -1;
   } else {
-    Serial.print("Image size is ");
-    Serial.println(len);
+    Serial.printf("FIFO size is %lu\n", len);
   }
 
   camera.CS_LOW();
   camera.set_fifo_burst();
 
-  SPI.transfer(0xFF);
-
-  static const size_t bufferSize = 4096;
-  static uint8_t buffer[bufferSize] = {0xFF};
+  size_t i = 0;
 
   while (len > 0) {
-    size_t will_copy = (len < bufferSize) ? len : bufferSize;
-    SPI.transferBytes(&buffer[0], &buffer[0], will_copy);
-    // client.write(&buffer[0], will_copy);
-    len -= will_copy;
+    dest[i] = SPI.transfer(0x00);
+    i++;
+    len--;
   }
 
-  camera.CS_HIGH();
   digitalWrite(CAM_MISO_TRISTATE, LOW);
+  camera.CS_HIGH();
 
-  Serial.println("Camera capture finished");
+  return i;
 }
 
-void setup(void) {
+int JPEGDraw(JPEGDRAW* pDraw) {
+  tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
+  tft.setSwapBytes(true);
+  tft.pushPixels(pDraw->pPixels, pDraw->iWidth * pDraw->iHeight);
+  return 1;
+}
+
+void setup() {
   Serial.begin(9600);
 
   tft.begin();
@@ -165,26 +156,37 @@ void setup(void) {
     }
   }
 
-  tft.println("SD card contents: ");
-  FsFile root = sd.open("/");
-  printDirectory(root, 0);
-  root.close();
-
   if (!cameraBegin()) {
     tft.println("Couldn't find camera");
   }
 
-  tft.println("Starting capture");
-  cameraCapture();
-  tft.println("Capture finished");
+  memset(previewBuf, 0, PREVIEW_BUF_SIZE);
+  const size_t previewSize = cameraCaptureToMemory(previewBuf, PREVIEW_BUF_SIZE);
+  Serial.printf("JPEG size = %d\n", previewSize);
+
+  if (previewSize > 0) {
+    FsFile file = sd.open("/image.jpg", O_RDWR | O_CREAT | O_TRUNC);
+    if (file) {
+      file.write(previewBuf, previewSize);
+      file.close();
+      Serial.println("Wrote image to disk");
+    } else {
+      Serial.println("Unable to open file");
+    }
+  }
 }
 
 void loop() {
-  DateTime now = rtc.now();
-
-  tft.setCursor(0, 0);
-  tft.printf("%d/%d/%d %.2d:%.2d:%.2d  ", now.year(), now.month(), now.day(),
-             now.hour(), now.minute(), now.second());
-
-  delay(1000);
+  // memset(previewBuf, 0, PREVIEW_BUF_SIZE);
+  // const size_t previewSize =
+  //   cameraCaptureToMemory(previewBuf, PREVIEW_BUF_SIZE);
+  // Serial.printf("JPEG size = %d\n", previewSize);
+  // if (jpeg.openRAM(previewBuf, previewSize, JPEGDraw)) {
+  //   Serial.printf("JPEG width = %d; height = %d\n", jpeg.getWidth(),
+  //                 jpeg.getHeight());
+  //   tft.startWrite();
+  //   jpeg.decode(0, 0, 0);
+  //   tft.endWrite();
+  //   jpeg.close();
+  // }
 }
