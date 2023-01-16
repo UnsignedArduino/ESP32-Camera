@@ -84,6 +84,11 @@ bool cameraBegin() {
   camera.InitCAM();
   camera.OV2640_set_JPEG_size(OV2640_160x120);
   camera.OV2640_set_Light_Mode(Auto);
+  camera.OV2640_set_Color_Saturation(Saturation0);
+  camera.OV2640_set_Brightness(Brightness0);
+  camera.OV2640_set_Contrast(Contrast0);
+  camera.OV2640_set_Special_effects(Normal);
+
   camera.clear_fifo_flag();
 
   Serial.println("Camera initialization...ok!");
