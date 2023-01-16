@@ -124,6 +124,9 @@ size_t cameraCaptureToMemory(uint8_t* dest, size_t destSize) {
   camera.CS_LOW();
   camera.set_fifo_burst();
 
+  hspi->transfer(0x00);
+  len--;
+
   size_t i = 0;
 
   while (len > 0) {
@@ -218,23 +221,32 @@ void setup() {
   Serial.begin(9600);
   Serial.println("\n\nESP32 camera");
 
-  hardwareBegin();
+  if (!hardwareBegin()) {
+    while (true) {
+      ;
+    }
+  }
 
-  // memset(previewBuf, 0, PREVIEW_BUF_SIZE);
-  // const size_t previewSize =
-  //   cameraCaptureToMemory(previewBuf, PREVIEW_BUF_SIZE);
-  // Serial.printf("JPEG size = %d\n", previewSize);
+  Serial.println("Taking photo");
+  tft.println("Taking photo");
+  memset(previewBuf, 0, PREVIEW_BUF_SIZE);
+  const size_t previewSize =
+    cameraCaptureToMemory(previewBuf, PREVIEW_BUF_SIZE);
+  Serial.printf("JPEG size = %d\n", previewSize);
+  tft.printf("JPEG size = %d\n", previewSize);
 
-  // if (previewSize > 0) {
-  //   FsFile file = sd.open("/image.jpg", O_RDWR | O_CREAT | O_TRUNC);
-  //   if (file) {
-  //     file.write(previewBuf, previewSize);
-  //     file.close();
-  //     Serial.println("Wrote image to disk");
-  //   } else {
-  //     Serial.println("Unable to open file");
-  //   }
-  // }
+  if (previewSize > 0) {
+    FsFile file = sd.open("/image.jpg", O_RDWR | O_CREAT | O_TRUNC);
+    if (file) {
+      file.write(previewBuf, previewSize);
+      file.close();
+      Serial.println("Wrote image to disk");
+      tft.println("Wrote image to disk");
+    } else {
+      Serial.println("Unable to open file");
+      tft.println("Unable to open file");
+    }
+  }
 }
 
 void loop() { ; }
