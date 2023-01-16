@@ -9,7 +9,7 @@
 #include <JPEGDEC.h>
 
 const uint8_t SD_CS = 5;
-const int8_t CAM_CS = -1;
+const int8_t CAM_CS = 14;
 
 #define SPI_CLOCK SD_SCK_MHZ(16)
 #define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK)
