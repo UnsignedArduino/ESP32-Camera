@@ -9,6 +9,7 @@
 #include <SD.h>           // Needed by JPEGDEC because it needs "File"
 #include <JPEGDEC.h>
 #include <ArduCamera.h>
+#include <Button.h>
 
 ArduCamera arduCamera;
 
@@ -25,6 +26,18 @@ SdFs sd;
 const uint32_t PREVIEW_BUF_SIZE = 160 * 120 * 12 / 8;
 uint8_t previewBuf[PREVIEW_BUF_SIZE];
 JPEGDEC jpeg;
+
+const uint8_t UP_BUTTON = 26;
+const uint8_t SELECT_BUTTON = 25;
+const uint8_t DOWN_BUTTON = 33;
+const uint8_t SHUTTER_BUTTON = 32;
+
+Button upButton(UP_BUTTON);
+Button selectButton(SELECT_BUTTON);
+Button downButton(DOWN_BUTTON);
+Button shutterButton(SHUTTER_BUTTON);
+
+const char* optionsMenu[] = {"Cancel", "View files"};
 
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
@@ -76,6 +89,11 @@ bool hardwareBegin() {
     goto hardwareBeginError;
   }
 
+  upButton.begin();
+  selectButton.begin();
+  downButton.begin();
+  shutterButton.begin();
+
   Serial.println("Hardware initialization...ok!");
 
   return true;
@@ -108,5 +126,9 @@ void loop() {
       tft.endWrite();
       jpeg.close();
     }
+  }
+
+  if (selectButton.pressed()) {
+    TFT_eSPI_GUI_menu(tft, optionsMenu, 2, upButton, downButton, selectButton);
   }
 }
