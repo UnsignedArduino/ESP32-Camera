@@ -14,6 +14,11 @@ const int8_t CAM_CS = -1;
 #define SPI_CLOCK SD_SCK_MHZ(16)
 #define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK)
 
+const uint8_t HSPI_CLK = 0;
+const uint8_t HSPI_MOSI = 2;
+const uint8_t HSPI_MISO = 15;
+SPIClass* hspi = NULL;
+
 RTC_DS3231 rtc;
 TFT_eSPI tft = TFT_eSPI();
 SdFs sd;
@@ -28,13 +33,14 @@ JPEGDEC jpeg;
 bool cameraBegin() {
   Wire.begin();
 
-  SPI.begin();
-  SPI.setFrequency(8000000);
+  hspi = new SPIClass(HSPI);
+  hspi->begin(HSPI_CLK, HSPI_MISO, HSPI_MOSI);
+  hspi->setFrequency(8000000);
   pinMode(CAM_CS, OUTPUT);
 
-  Serial.print("Testing VSPI...");
-  tft.print("Testing VSPI...");
-
+  Serial.print("Testing HSPI...");
+  tft.print("Testing HSPI...");
+  camera.setSpiBus(hspi);
   camera.write_reg(ARDUCHIP_TEST1, 0x55);
   uint8_t temp = camera.read_reg(ARDUCHIP_TEST1);
   if (temp != 0x55) {
@@ -121,7 +127,7 @@ size_t cameraCaptureToMemory(uint8_t* dest, size_t destSize) {
   size_t i = 0;
 
   while (len > 0) {
-    dest[i] = SPI.transfer(0x00);
+    dest[i] = hspi->transfer(0x00);
     i++;
     len--;
   }
