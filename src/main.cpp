@@ -8,15 +8,11 @@
 #include <SD.h>           // Needed by JPEGDEC because it needs "File"
 #include <JPEGDEC.h>
 
-const uint8_t HSPI_CLK = 5;
-const uint8_t HSPI_MISO = 17;
-const uint8_t HSPI_MOSI = 16;
-const uint8_t SD_CS = 4;
+const uint8_t SD_CS = 5;
 const int8_t CAM_CS = -1;
 
-SoftSpiDriver<HSPI_MISO, HSPI_MOSI, HSPI_CLK> softSpi;
-#define SPI_CLOCK SD_SCK_MHZ(27)
-#define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK, &softSpi)
+#define SPI_CLOCK SD_SCK_MHZ(16)
+#define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK)
 
 RTC_DS3231 rtc;
 TFT_eSPI tft = TFT_eSPI();
@@ -30,15 +26,14 @@ uint8_t previewBuf[PREVIEW_BUF_SIZE];
 JPEGDEC jpeg;
 
 bool cameraBegin() {
-  Serial.println("Preparing camera...");
-
   Wire.begin();
 
   SPI.begin();
   SPI.setFrequency(8000000);
   pinMode(CAM_CS, OUTPUT);
 
-  Serial.print("Testing SPI...");
+  Serial.print("Testing VSPI...");
+  tft.print("Testing VSPI...");
 
   camera.write_reg(ARDUCHIP_TEST1, 0x55);
   uint8_t temp = camera.read_reg(ARDUCHIP_TEST1);
@@ -46,12 +41,17 @@ bool cameraBegin() {
     Serial.print("error! (0x55 != 0x");
     Serial.print(temp, HEX);
     Serial.println(")");
-    return false;
+    tft.print("error! (0x55 != 0x");
+    tft.print(temp, HEX);
+    tft.println(")");
+    goto cameraBeginError;
   } else {
     Serial.println("ok!");
+    tft.println("ok!");
   }
 
   Serial.print("Checking camera presence...");
+  tft.print("Checking camera presence...");
 
   uint8_t vid, pid;
   camera.wrSensorReg8_8(0xFF, 0x01);
@@ -63,9 +63,15 @@ bool cameraBegin() {
     Serial.print(" pid: 0x");
     Serial.print(pid, HEX);
     Serial.println(")");
-    return false;
+    tft.println("missing! (vid: 0x");
+    tft.print(vid, HEX);
+    tft.print(" pid: 0x");
+    tft.print(pid, HEX);
+    tft.println(")");
+    goto cameraBeginError;
   } else {
-    Serial.println("found!");
+    Serial.println("ok!");
+    tft.println("ok!");
   }
 
   camera.set_format(JPEG);
@@ -74,9 +80,16 @@ bool cameraBegin() {
   camera.OV2640_set_Light_Mode(Auto);
   camera.clear_fifo_flag();
 
-  Serial.println("Camera ok!");
+  Serial.println("Camera initialization...ok!");
+  tft.println("Camera initialization...ok!");
 
   return true;
+
+cameraBeginError:
+
+  Serial.println("Camera initialization...error!");
+  tft.println("Camera initialization...error!");
+  return false;
 }
 
 size_t cameraCaptureToMemory(uint8_t* dest, size_t destSize) {
@@ -125,44 +138,81 @@ int JPEGDraw(JPEGDRAW* pDraw) {
   return 1;
 }
 
-void setup() {
-  Serial.begin(9600);
-  Serial.println("ESP32 camera");
-
+bool hardwareBegin() {
   tft.begin();
   tft.fillScreen(TFT_BLACK);
   tft.setRotation(1);
 
-  tft.println("Hello world!");
+  Serial.println("Initiating hardware...");
+  tft.println("Initiating hardware...");
 
+  Serial.print("Trying RTC...");
+  tft.print("Trying RTC...");
   if (!rtc.begin()) {
-    Serial.println("Cannot find RTC");
+    Serial.println("error!");
+    tft.println("error!");
+    goto hardwareBeginError;
   } else {
-    Serial.println("Found RTC");
+    Serial.println("ok!");
+    tft.println("ok!");
   }
 
+  Serial.print("Checking for RTC power loss...");
+  tft.print("Checking for RTC power loss...");
   if (rtc.lostPower()) {
+    Serial.println("error!");
     Serial.println("RTC lost power, setting to compile time");
+    tft.println("error!");
+    tft.println("RTC lost power, setting to compile time");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  } else {
+    Serial.println("ok!");
+    tft.println("ok!");
   }
+
+  Serial.print("Trying SD card...");
+  tft.print("Trying SD card...");
 
   if (!sd.begin(SD_CONFIG)) {
-    Serial.println("Cannot find SD card");
+    Serial.println("error!");
+    tft.println("error!");
     if (sd.sdErrorCode()) {
       Serial.print("SD error code: ");
       printSdErrorSymbol(&Serial, sd.sdErrorCode());
       Serial.print("\nSD error data: ");
       Serial.println(sd.sdErrorData());
+      tft.print("SD error code: ");
+      printSdErrorSymbol(&tft, sd.sdErrorCode());
+      tft.print("\nSD error data: ");
+      tft.println(sd.sdErrorData());
     }
+    goto hardwareBeginError;
   } else {
-    Serial.println("Found SD card");
+    Serial.println("ok!");
+    tft.println("ok!");
   }
 
-  // if (!cameraBegin()) {
-  //   Serial.println("Cannot find camera");
-  // } else {
-  //   Serial.println("Found camera");
-  // }
+  if (!cameraBegin()) {
+    goto hardwareBeginError;
+  }
+
+  Serial.println("Hardware initialization...ok!");
+  tft.println("Hardware initialization...ok!");
+
+  return true;
+
+hardwareBeginError:
+
+  Serial.println("Hardware initialization...error!");
+  tft.println("Hardware initialization...error!");
+  return false;
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("\n\nESP32 camera");
+
+  hardwareBegin();
 
   // memset(previewBuf, 0, PREVIEW_BUF_SIZE);
   // const size_t previewSize =

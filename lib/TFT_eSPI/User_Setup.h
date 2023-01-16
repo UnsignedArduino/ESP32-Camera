@@ -211,14 +211,14 @@
 // For ESP32 Dev board (only tested with ILI9341 display)
 // The hardware SPI can be mapped to any pins
 
-#define TFT_MISO 17
-#define TFT_MOSI 16
-#define TFT_SCLK 5
-#define TFT_CS 2   // Chip select control pin
-#define TFT_DC 15  // Data Command control pin
+#define TFT_MISO 19
+#define TFT_MOSI 23
+#define TFT_SCLK 18
+#define TFT_CS 17   // Chip select control pin
+#define TFT_DC 16  // Data Command control pin
 // #define TFT_RST 15  // Reset pin (could connect to RST pin)
 #define TFT_RST \
-  -1  // Set TFT_RST to -1 if display RESET is connected to ESP32 board RST
+  4  // Set TFT_RST to -1 if display RESET is connected to ESP32 board RST
 
 // For ESP32 Dev board (only tested with GC9A01 display)
 // The hardware SPI can be mapped to any pins
@@ -372,7 +372,7 @@
 // The ESP32 has 2 free SPI ports i.e. VSPI and HSPI, the VSPI is the default.
 // If the VSPI port is in use and pins are not accessible (e.g. TTGO T-Beam)
 // then uncomment the following line:
-#define USE_HSPI_PORT
+// #define USE_HSPI_PORT
 
 // Comment out the following #define if "SPI Transactions" do not need to be
 // supported. When commented out the code size will be smaller and sketches will

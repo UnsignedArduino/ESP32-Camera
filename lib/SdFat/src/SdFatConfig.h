@@ -120,7 +120,7 @@
  *
  * 3 - An external SPI driver derived from SdSpiBaseClass is always used.
  */
-#define SPI_DRIVER_SELECT 2
+#define SPI_DRIVER_SELECT 1
 
 #ifndef SPI_DRIVER_SELECT
 #define SPI_DRIVER_SELECT 0
