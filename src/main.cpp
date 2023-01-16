@@ -99,7 +99,7 @@ cameraBeginError:
 }
 
 size_t cameraCaptureToMemory(uint8_t* dest, size_t destSize) {
-  Serial.println("Starting capture");
+  // Serial.println("Starting capture");
 
   camera.flush_fifo();
   camera.clear_fifo_flag();
@@ -118,7 +118,7 @@ size_t cameraCaptureToMemory(uint8_t* dest, size_t destSize) {
     Serial.println("FIFO size bigger than destination buffer");
     return -1;
   } else {
-    Serial.printf("FIFO size is %lu\n", len);
+    // Serial.printf("FIFO size is %lu\n", len);
   }
 
   camera.CS_LOW();
@@ -226,27 +226,18 @@ void setup() {
       ;
     }
   }
+}
 
-  Serial.println("Taking photo");
-  tft.println("Taking photo");
+void loop() {
   memset(previewBuf, 0, PREVIEW_BUF_SIZE);
   const size_t previewSize =
     cameraCaptureToMemory(previewBuf, PREVIEW_BUF_SIZE);
-  Serial.printf("JPEG size = %d\n", previewSize);
-  tft.printf("JPEG size = %d\n", previewSize);
-
   if (previewSize > 0) {
-    FsFile file = sd.open("/image.jpg", O_RDWR | O_CREAT | O_TRUNC);
-    if (file) {
-      file.write(previewBuf, previewSize);
-      file.close();
-      Serial.println("Wrote image to disk");
-      tft.println("Wrote image to disk");
-    } else {
-      Serial.println("Unable to open file");
-      tft.println("Unable to open file");
+    if (jpeg.openRAM(previewBuf, previewSize, JPEGDraw)) {
+      tft.startWrite();
+      jpeg.decode(0, 0, 0);
+      tft.endWrite();
+      jpeg.close();
     }
   }
 }
-
-void loop() { ; }
