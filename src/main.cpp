@@ -14,10 +14,9 @@ const uint8_t HSPI_MOSI = 16;
 const uint8_t SD_CS = 4;
 const int8_t CAM_CS = -1;
 
-SPIClass HSPI_SPI(HSPI);
-const uint32_t SPI_CLOCK = SD_SCK_MHZ(27);
-const SdSpiConfig SD_CONFIG =
-  SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK, &HSPI_SPI);
+SoftSpiDriver<HSPI_MISO, HSPI_MOSI, HSPI_CLK> softSpi;
+#define SPI_CLOCK SD_SCK_MHZ(27)
+#define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK, &softSpi)
 
 RTC_DS3231 rtc;
 TFT_eSPI tft = TFT_eSPI();
@@ -136,28 +135,28 @@ void setup() {
 
   tft.println("Hello world!");
 
-  // if (!rtc.begin()) {
-  //   Serial.println("Cannot find RTC");
-  // } else {
-  //   Serial.println("Found RTC");
-  // }
+  if (!rtc.begin()) {
+    Serial.println("Cannot find RTC");
+  } else {
+    Serial.println("Found RTC");
+  }
 
-  // if (rtc.lostPower()) {
-  //   Serial.println("RTC lost power, setting to compile time");
-  //   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  // }
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, setting to compile time");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
 
-  // if (!sd.begin(SD_CONFIG)) {
-  //   Serial.println("Cannot find SD card");
-  //   if (sd.sdErrorCode()) {
-  //     Serial.print("SD error code: ");
-  //     printSdErrorSymbol(&Serial, sd.sdErrorCode());
-  //     Serial.print("\nSD error data: ");
-  //     Serial.println(sd.sdErrorData());
-  //   }
-  // } else {
-  //   Serial.println("Found SD card");
-  // }
+  if (!sd.begin(SD_CONFIG)) {
+    Serial.println("Cannot find SD card");
+    if (sd.sdErrorCode()) {
+      Serial.print("SD error code: ");
+      printSdErrorSymbol(&Serial, sd.sdErrorCode());
+      Serial.print("\nSD error data: ");
+      Serial.println(sd.sdErrorData());
+    }
+  } else {
+    Serial.println("Found SD card");
+  }
 
   // if (!cameraBegin()) {
   //   Serial.println("Cannot find camera");
