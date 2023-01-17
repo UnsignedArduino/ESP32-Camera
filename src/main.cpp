@@ -38,8 +38,12 @@ Button downButton(DOWN_BUTTON);
 Button shutterButton(SHUTTER_BUTTON);
 
 const char* optionsTitle = "Options";
-const uint8_t optionsCount = 2;
-const char* optionsMenu[optionsCount] = {"Cancel", "View files"};
+const uint8_t optionsCount = 15;
+const char* optionsMenu[optionsCount] = {
+  "Cancel",         "View files",     "menu option 3",  "menu option 4",
+  "menu option 5",  "menu option 6",  "menu option 7",  "menu option 8",
+  "menu option 9",  "menu option 10", "menu option 11", "menu option 12",
+  "menu option 13", "menu option 14", "menu option 15"};
 
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
@@ -87,9 +91,9 @@ bool hardwareBegin() {
     Serial.println("ok!");
   }
 
-  if (!arduCamera.begin()) {
-    goto hardwareBeginError;
-  }
+  // if (!arduCamera.begin()) {
+  //   goto hardwareBeginError;
+  // }
 
   upButton.begin();
   selectButton.begin();
@@ -118,17 +122,17 @@ void setup() {
 }
 
 void loop() {
-  memset(previewBuf, 0, PREVIEW_BUF_SIZE);
-  const size_t previewSize =
-    arduCamera.captureToMemory(previewBuf, PREVIEW_BUF_SIZE);
-  if (previewSize > 0) {
-    if (jpeg.openRAM(previewBuf, previewSize, JPEGDraw)) {
-      tft.startWrite();
-      jpeg.decode(0, 0, 0);
-      tft.endWrite();
-      jpeg.close();
-    }
-  }
+  // memset(previewBuf, 0, PREVIEW_BUF_SIZE);
+  // const size_t previewSize =
+  //   arduCamera.captureToMemory(previewBuf, PREVIEW_BUF_SIZE);
+  // if (previewSize > 0) {
+  //   if (jpeg.openRAM(previewBuf, previewSize, JPEGDraw)) {
+  //     tft.startWrite();
+  //     jpeg.decode(0, 0, 0);
+  //     tft.endWrite();
+  //     jpeg.close();
+  //   }
+  // }
 
   if (selectButton.pressed()) {
     switch (TFT_eSPI_GUI_menu(tft, optionsTitle, optionsMenu, optionsCount,

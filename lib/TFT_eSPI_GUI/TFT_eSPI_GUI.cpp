@@ -19,13 +19,17 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   const uint16_t boxHeight = tft.height() - topPadding - bottomPadding;
   const uint16_t boxX = leftPadding;
   const uint16_t boxY = topPadding;
-  const uint8_t maxCharPerRow = boxWidth / charWidth;
 
-  tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
-  tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1, textColor);
+  const uint8_t maxEntryPerPage = 10;
+  const bool showScrollbar = menuCount > maxEntryPerPage;
+  const uint8_t maxCharPerRow =
+    (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
 
   const uint8_t fontX = boxX + charWidth / 2;
   uint8_t fontY = boxY + charHeight;
+
+  tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
+  tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1, textColor);
 
   tft.setTextColor(textColor, boxColor);
   tft.setCursor(fontX, fontY);
@@ -34,7 +38,11 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
 
   fontY += charHeight * 1.5;
 
-  const uint8_t maxEntryPerPage = 10;
+  const uint8_t scrollBarX = boxX + boxWidth - charWidth;
+  const uint8_t scrollBarY = fontY;
+  const uint8_t scrollBarWidth = charWidth / 2;
+  const uint8_t scrollBarHeight = maxEntryPerPage * charHeight;
+
   uint8_t offset = 0;
   uint8_t selected = 0;
 
@@ -50,9 +58,21 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
       tft.setCursor(fontX, fontY + charHeight * (i - offset));
       tft.print(" ");
       tft.print(menu[i]);
-      for (int j = strlen(menu[i]) + 1; j < maxCharPerRow - 1; j++) {
+      for (int j = strlen(menu[i]); j < maxCharPerRow - 2; j++) {
         tft.print(" ");
       }
+    }
+
+    if (showScrollbar) {
+      const uint8_t startY =
+        map(min((int16_t)selected, (int16_t)(menuCount - maxEntryPerPage)), 0,
+            menuCount, scrollBarY, scrollBarY + scrollBarHeight);
+      const uint8_t barHeight =
+        map(maxEntryPerPage, 0, menuCount, 0, scrollBarHeight);
+
+      tft.fillRect(scrollBarX, scrollBarY, scrollBarWidth, scrollBarHeight,
+                   boxColor);
+      tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
     }
 
     while (true) {
@@ -89,6 +109,14 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                                 Button upButton, Button downButton,
                                 Button selectButton, Button shutterButton,
                                 char* result, size_t resultSize) {
+  const uint8_t menuCount = 20;
+  const char* menu[menuCount] = {
+    "Menu item 1",  "Menu item 2",  "Menu item 3",  "Menu item 4",
+    "Menu item 5",  "Menu item 6",  "Menu item 7",  "Menu item 8",
+    "Menu item 9",  "Menu item 10", "Menu item 11", "Menu item 12",
+    "Menu item 13", "Menu item 14", "Menu item 15", "Menu item 16",
+    "Menu item 17", "Menu item 18", "Menu item 19", "Menu item 20"};
+
   const uint8_t charWidth = 6;
   const uint8_t charHeight = 8;
   const uint16_t boxColor = TFT_WHITE;
@@ -102,13 +130,17 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   const uint16_t boxHeight = tft.height() - topPadding - bottomPadding;
   const uint16_t boxX = leftPadding;
   const uint16_t boxY = topPadding;
-  const uint8_t maxCharPerRow = boxWidth / charWidth;
 
-  tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
-  tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1, textColor);
+  const uint8_t maxEntryPerPage = 8;
+  const bool showScrollbar = menuCount > maxEntryPerPage;
+  const uint8_t maxCharPerRow =
+    (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
 
   const uint8_t fontX = boxX + charWidth / 2;
   uint8_t fontY = boxY + charHeight;
+
+  tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
+  tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1, textColor);
 
   tft.setTextColor(textColor, boxColor);
   tft.setCursor(fontX, fontY);
@@ -122,17 +154,13 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
 
   fontY += charHeight * 1.5;
 
-  const uint8_t maxEntryPerPage = 8;
+  const uint8_t scrollBarX = boxX + boxWidth - charWidth;
+  const uint8_t scrollBarY = fontY;
+  const uint8_t scrollBarWidth = charWidth / 2;
+  const uint8_t scrollBarHeight = maxEntryPerPage * charHeight;
+
   uint8_t offset = 0;
   uint8_t selected = 0;
-
-  const uint8_t menuCount = 20;
-  const char* menu[menuCount] = {
-    "Menu item 1",  "Menu item 2",  "Menu item 3",  "Menu item 4",
-    "Menu item 5",  "Menu item 6",  "Menu item 7",  "Menu item 8",
-    "Menu item 9",  "Menu item 10", "Menu item 11", "Menu item 12",
-    "Menu item 13", "Menu item 14", "Menu item 15", "Menu item 16",
-    "Menu item 17", "Menu item 18", "Menu item 19", "Menu item 20"};
 
   while (true) {
     for (int i = offset;
@@ -149,6 +177,18 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
       for (int j = strlen(menu[i]) + 1; j < maxCharPerRow - 1; j++) {
         tft.print(" ");
       }
+    }
+
+    if (showScrollbar) {
+      const uint8_t startY =
+        map(min((int16_t)selected, (int16_t)(menuCount - maxEntryPerPage)), 0,
+            menuCount, scrollBarY, scrollBarY + scrollBarHeight);
+      const uint8_t barHeight =
+        map(maxEntryPerPage, 0, menuCount, 0, scrollBarHeight);
+
+      tft.fillRect(scrollBarX, scrollBarY, scrollBarWidth, scrollBarHeight,
+                   boxColor);
+      tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
     }
 
     while (true) {
