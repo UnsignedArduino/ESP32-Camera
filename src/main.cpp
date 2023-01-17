@@ -38,12 +38,8 @@ Button downButton(DOWN_BUTTON);
 Button shutterButton(SHUTTER_BUTTON);
 
 const char* optionsTitle = "Options";
-const uint8_t optionsCount = 15;
-const char* optionsMenu[optionsCount] = {
-  "Cancel",         "View files",     "menu option 3",  "menu option 4",
-  "menu option 5",  "menu option 6",  "menu option 7",  "menu option 8",
-  "menu option 9",  "menu option 10", "menu option 11", "menu option 12",
-  "menu option 13", "menu option 14", "menu option 15"};
+const uint8_t optionsCount = 2;
+const char* optionsMenu[optionsCount] = {"Cancel", "View files"};
 
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
