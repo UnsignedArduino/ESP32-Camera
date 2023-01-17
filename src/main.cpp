@@ -38,7 +38,8 @@ Button downButton(DOWN_BUTTON);
 Button shutterButton(SHUTTER_BUTTON);
 
 const char* optionsTitle = "Options";
-const char* optionsMenu[] = {"Cancel", "View files"};
+const uint8_t optionsCount = 2;
+const char* optionsMenu[optionsCount] = {"Cancel", "View files"};
 
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
@@ -130,7 +131,21 @@ void loop() {
   }
 
   if (selectButton.pressed()) {
-    TFT_eSPI_GUI_menu(tft, optionsTitle, optionsMenu, 2, upButton, downButton,
-                      selectButton);
+    switch (TFT_eSPI_GUI_menu(tft, optionsTitle, optionsMenu, optionsCount,
+                              upButton, downButton, selectButton)) {
+      default:
+      case 0: {
+        break;
+      }
+      case 1: {
+        const size_t MAX_PATH_SIZE = 255;
+        char result[MAX_PATH_SIZE];
+        result[0] = '\0';
+        TFT_eSPI_GUI_file_explorer(tft, sd, "/", upButton, downButton,
+                                   selectButton, shutterButton, result,
+                                   MAX_PATH_SIZE);
+        break;
+      }
+    }
   }
 }
