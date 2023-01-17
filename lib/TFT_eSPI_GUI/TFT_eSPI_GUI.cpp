@@ -3,8 +3,8 @@
 #include "TFT_eSPI_GUI.h"
 
 // https://github.com/adafruit/Adafruit_Arcada/blob/master/Adafruit_Arcada_Alerts.cpp#L200
-uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char** menu, uint8_t menuCount,
-                          Button upButton, Button downButton,
+uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
+                          uint8_t menuCount, Button upButton, Button downButton,
                           Button selectButton) {
   const uint8_t charWidth = 6;
   const uint8_t charHeight = 8;
@@ -15,17 +15,24 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char** menu, uint8_t menuCount,
   const uint8_t bottomPadding = 16;
   const uint8_t leftPadding = 8;
 
-  uint16_t boxWidth = tft.width() - leftPadding - rightPadding;
-  uint16_t boxHeight = tft.height() - topPadding - bottomPadding;
-  uint16_t boxX = leftPadding;
-  uint16_t boxY = topPadding;
+  const uint16_t boxWidth = tft.width() - leftPadding - rightPadding;
+  const uint16_t boxHeight = tft.height() - topPadding - bottomPadding;
+  const uint16_t boxX = leftPadding;
+  const uint16_t boxY = topPadding;
   const uint8_t maxCharPerRow = boxWidth / charWidth;
 
   tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
   tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1, textColor);
 
   const uint8_t fontX = boxX + charWidth / 2;
-  const uint8_t fontY = boxY + charHeight;
+  uint8_t fontY = boxY + charHeight;
+
+  tft.setTextColor(textColor, boxColor);
+  tft.setCursor(fontX, fontY);
+  tft.print(" ");
+  tft.print(title);
+
+  fontY += charHeight * 1.5;
 
   uint8_t selected = 0;
 
@@ -39,7 +46,7 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char** menu, uint8_t menuCount,
       tft.setCursor(fontX, fontY + charHeight * i);
       tft.print(" ");
       tft.print(menu[i]);
-      for (int j = strlen(menu[i])+1; j < maxCharPerRow-1; j++) {
+      for (int j = strlen(menu[i]) + 1; j < maxCharPerRow - 1; j++) {
         tft.print(" ");
       }
     }

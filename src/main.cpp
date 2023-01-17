@@ -37,6 +37,7 @@ Button selectButton(SELECT_BUTTON);
 Button downButton(DOWN_BUTTON);
 Button shutterButton(SHUTTER_BUTTON);
 
+const char* optionsTitle = "Options";
 const char* optionsMenu[] = {"Cancel", "View files"};
 
 int JPEGDraw(JPEGDRAW* pDraw) {
@@ -129,6 +130,7 @@ void loop() {
   }
 
   if (selectButton.pressed()) {
-    TFT_eSPI_GUI_menu(tft, optionsMenu, 2, upButton, downButton, selectButton);
+    TFT_eSPI_GUI_menu(tft, optionsTitle, optionsMenu, 2, upButton, downButton,
+                      selectButton);
   }
 }
