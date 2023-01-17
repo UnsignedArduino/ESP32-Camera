@@ -21,6 +21,10 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   const uint16_t boxY = topPadding;
 
   const uint8_t maxEntryPerPage = 10;
+  const uint16_t timePerChar = 200;
+  const uint8_t startEndPauseTicks = 4;
+
+  uint32_t selectedTime = millis();
   const bool showScrollbar = menuCount > maxEntryPerPage;
   const uint8_t maxCharPerRow =
     (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
@@ -46,6 +50,10 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   uint8_t offset = 0;
   uint8_t selected = 0;
 
+  uint8_t offsetPauseTicks = startEndPauseTicks;
+  uint8_t selectedCharOffset = 0;
+  bool resetAfterPause = false;
+
   while (true) {
     for (int i = offset;
          i < min((uint16_t)menuCount, (uint16_t)(offset + maxEntryPerPage));
@@ -57,7 +65,20 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
       }
       tft.setCursor(fontX, fontY + charHeight * (i - offset));
       tft.print(" ");
-      tft.print(menu[i]);
+      if (i == selected) {
+        for (uint8_t j = 1;
+             j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
+          tft.print(menu[i][j - 1 + selectedCharOffset]);
+        }
+      } else {
+        for (uint8_t j = 1;
+             j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
+          tft.print(menu[i][j - 1]);
+        }
+      }
+      if (strlen(menu[i]) > maxCharPerRow - 3) {
+        tft.print(" ");
+      }
       for (int j = strlen(menu[i]); j < maxCharPerRow - 2; j++) {
         tft.print(" ");
       }
@@ -82,6 +103,8 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
         } else {
           selected--;
         }
+        selectedCharOffset = 0;
+        selectedTime = millis();
         break;
       }
       if (downButton.pressed()) {
@@ -90,10 +113,32 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
         } else {
           selected++;
         }
+        selectedCharOffset = 0;
+        selectedTime = millis();
         break;
       }
       if (selectButton.pressed()) {
         return selected;
+      }
+      if (millis() - selectedTime > timePerChar &&
+          strlen(menu[selected]) > maxCharPerRow - 3) {
+        selectedTime = millis();
+        if (offsetPauseTicks > 0) {
+          offsetPauseTicks--;
+        } else if (resetAfterPause) {
+          resetAfterPause = false;
+          selectedCharOffset = 0;
+          offsetPauseTicks = startEndPauseTicks;
+          break;
+        } else {
+          selectedCharOffset++;
+          if (selectedCharOffset + maxCharPerRow >=
+              strlen(menu[selected]) + 3) {
+            offsetPauseTicks = startEndPauseTicks;
+            resetAfterPause = true;
+          }
+          break;
+        }
       }
     }
 
@@ -110,12 +155,26 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                                 Button selectButton, Button shutterButton,
                                 char* result, size_t resultSize) {
   const uint8_t menuCount = 20;
-  const char* menu[menuCount] = {
-    "Menu item 1",  "Menu item 2",  "Menu item 3",  "Menu item 4",
-    "Menu item 5",  "Menu item 6",  "Menu item 7",  "Menu item 8",
-    "Menu item 9",  "Menu item 10", "Menu item 11", "Menu item 12",
-    "Menu item 13", "Menu item 14", "Menu item 15", "Menu item 16",
-    "Menu item 17", "Menu item 18", "Menu item 19", "Menu item 20"};
+  const char* menu[menuCount] = {"Super duper long menu item",
+                                 "Perfect fit menu item",
+                                 "Actual fit menu item",
+                                 "Menu item 4",
+                                 "Menu item 5",
+                                 "Menu item 6",
+                                 "Menu item 7",
+                                 "Menu item 8",
+                                 "Menu item 9",
+                                 "Menu item 10",
+                                 "Menu item 11",
+                                 "Menu item 12",
+                                 "Menu item 13",
+                                 "Menu item 14",
+                                 "Menu item 15",
+                                 "Menu item 16",
+                                 "Menu item 17",
+                                 "Menu item 18",
+                                 "Menu item 19",
+                                 "Menu item 20"};
 
   const uint8_t charWidth = 6;
   const uint8_t charHeight = 8;
@@ -132,6 +191,10 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   const uint16_t boxY = topPadding;
 
   const uint8_t maxEntryPerPage = 8;
+  const uint16_t timePerChar = 200;
+  const uint8_t startEndPauseTicks = 4;
+
+  uint32_t selectedTime = millis();
   const bool showScrollbar = menuCount > maxEntryPerPage;
   const uint8_t maxCharPerRow =
     (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
@@ -162,6 +225,10 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   uint8_t offset = 0;
   uint8_t selected = 0;
 
+  uint8_t offsetPauseTicks = startEndPauseTicks;
+  uint8_t selectedCharOffset = 0;
+  bool resetAfterPause = false;
+
   while (true) {
     for (int i = offset;
          i < min((uint16_t)menuCount, (uint16_t)(offset + maxEntryPerPage));
@@ -173,7 +240,20 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
       }
       tft.setCursor(fontX, fontY + charHeight * (i - offset));
       tft.print(" ");
-      tft.print(menu[i]);
+      if (i == selected) {
+        for (uint8_t j = 1;
+             j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
+          tft.print(menu[i][j - 1 + selectedCharOffset]);
+        }
+      } else {
+        for (uint8_t j = 1;
+             j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
+          tft.print(menu[i][j - 1]);
+        }
+      }
+      if (strlen(menu[i]) > maxCharPerRow - 3) {
+        tft.print(" ");
+      }
       for (int j = strlen(menu[i]) + 1; j < maxCharPerRow - 1; j++) {
         tft.print(" ");
       }
@@ -198,6 +278,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         } else {
           selected--;
         }
+        selectedCharOffset = 0;
+        selectedTime = millis();
         break;
       }
       if (downButton.pressed()) {
@@ -206,10 +288,32 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         } else {
           selected++;
         }
+        selectedCharOffset = 0;
+        selectedTime = millis();
         break;
       }
       if (selectButton.pressed()) {
         return true;
+      }
+      if (millis() - selectedTime > timePerChar &&
+          strlen(menu[selected]) > maxCharPerRow - 3) {
+        selectedTime = millis();
+        if (offsetPauseTicks > 0) {
+          offsetPauseTicks--;
+        } else if (resetAfterPause) {
+          resetAfterPause = false;
+          selectedCharOffset = 0;
+          offsetPauseTicks = startEndPauseTicks;
+          break;
+        } else {
+          selectedCharOffset++;
+          if (selectedCharOffset + maxCharPerRow >=
+              strlen(menu[selected]) + 3) {
+            offsetPauseTicks = startEndPauseTicks;
+            resetAfterPause = true;
+          }
+          break;
+        }
       }
     }
 
