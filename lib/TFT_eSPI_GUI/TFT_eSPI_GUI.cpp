@@ -23,8 +23,13 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   const uint8_t maxEntryPerPage = 10;
   const uint16_t timePerChar = 200;
   const uint8_t startEndPauseTicks = 4;
+  const uint16_t holdToAccelTime = 500;
+  const uint16_t moveThrottleTime = 50;
 
   uint32_t selectedTime = millis();
+  uint32_t lastPressTime = millis();
+  uint32_t pressTime = 0;
+  uint32_t lastMovedTime = millis();
   const bool showScrollbar = menuCount > maxEntryPerPage;
   const uint8_t maxCharPerRow =
     (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
@@ -86,7 +91,7 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
 
     if (showScrollbar) {
       const uint8_t startY =
-        map(min((int16_t)selected, (int16_t)(menuCount - maxEntryPerPage)), 0,
+        map(min((int16_t)offset, (int16_t)(menuCount - maxEntryPerPage)), 0,
             menuCount, scrollBarY, scrollBarY + scrollBarHeight);
       const uint8_t barHeight =
         map(maxEntryPerPage, 0, menuCount, 0, scrollBarHeight);
@@ -96,8 +101,22 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
       tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
     }
 
+    while (millis() - lastMovedTime < moveThrottleTime) {
+      delay(1);
+    }
+
     while (true) {
-      if (upButton.pressed()) {
+      if (!upButton.read() || !downButton.read()) {
+        if (lastPressTime > 0) {
+          pressTime += millis() - lastPressTime;
+        }
+        lastPressTime = millis();
+      } else {
+        pressTime = 0;
+        lastPressTime = 0;
+      }
+      if (upButton.pressed() ||
+          (!upButton.read() && pressTime > holdToAccelTime)) {
         if (selected == 0) {
           selected = menuCount - 1;
         } else {
@@ -107,7 +126,8 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
         selectedTime = millis();
         break;
       }
-      if (downButton.pressed()) {
+      if (downButton.pressed() ||
+          (!downButton.read() && pressTime > holdToAccelTime)) {
         if (selected == menuCount - 1) {
           selected = 0;
         } else {
@@ -147,6 +167,8 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
     } else if (selected < offset) {
       offset = selected;
     }
+
+    lastMovedTime = millis();
   }
 }
 
@@ -193,8 +215,13 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   const uint8_t maxEntryPerPage = 8;
   const uint16_t timePerChar = 200;
   const uint8_t startEndPauseTicks = 4;
+  const uint16_t holdToAccelTime = 500;
+  const uint16_t moveThrottleTime = 50;
 
   uint32_t selectedTime = millis();
+  uint32_t lastPressTime = millis();
+  uint32_t pressTime = 0;
+  uint32_t lastMovedTime = millis();
   const bool showScrollbar = menuCount > maxEntryPerPage;
   const uint8_t maxCharPerRow =
     (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
@@ -261,7 +288,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
 
     if (showScrollbar) {
       const uint8_t startY =
-        map(min((int16_t)selected, (int16_t)(menuCount - maxEntryPerPage)), 0,
+        map(min((int16_t)offset, (int16_t)(menuCount - maxEntryPerPage)), 0,
             menuCount, scrollBarY, scrollBarY + scrollBarHeight);
       const uint8_t barHeight =
         map(maxEntryPerPage, 0, menuCount, 0, scrollBarHeight);
@@ -271,8 +298,22 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
       tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
     }
 
+    while (millis() - lastMovedTime < moveThrottleTime) {
+      delay(1);
+    }
+
     while (true) {
-      if (upButton.pressed()) {
+      if (!upButton.read() || !downButton.read()) {
+        if (lastPressTime > 0) {
+          pressTime += millis() - lastPressTime;
+        }
+        lastPressTime = millis();
+      } else {
+        pressTime = 0;
+        lastPressTime = 0;
+      }
+      if (upButton.pressed() ||
+          (!upButton.read() && pressTime > holdToAccelTime)) {
         if (selected == 0) {
           selected = menuCount - 1;
         } else {
@@ -282,7 +323,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         selectedTime = millis();
         break;
       }
-      if (downButton.pressed()) {
+      if (downButton.pressed() ||
+          (!downButton.read() && pressTime > holdToAccelTime)) {
         if (selected == menuCount - 1) {
           selected = 0;
         } else {
@@ -316,11 +358,12 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         }
       }
     }
-
     if (selected >= offset + maxEntryPerPage) {
       offset += selected - (offset + maxEntryPerPage) + 1;
     } else if (selected < offset) {
       offset = selected;
     }
+
+    lastMovedTime = millis();
   }
 }
