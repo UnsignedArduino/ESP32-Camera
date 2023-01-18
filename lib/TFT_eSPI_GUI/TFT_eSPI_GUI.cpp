@@ -209,7 +209,7 @@ bool getFileNameFromIndex(SdFs& sd, char* start, uint32_t index, char* result,
 
   FsFile file;
   dir.rewindDirectory();
-  for (uint32_t i = 0; i < index;) {
+  for (uint32_t i = 0; i <= index;) {
     if (!file.openNext(&dir, O_RDONLY)) {
       return false;
     }
@@ -336,6 +336,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                     MAX_PATH_SIZE);
             getFileNameFromIndex(sd, currentDirectory, i - extraOptionsCount,
                                  menuEntries[i - offset], MAX_PATH_SIZE);
+            // Serial.printf("File at index %d (menu entry %d) is \"%s\"\n",
+            //               i - extraOptionsCount, i, menuEntries[i - offset]);
           }
         }
       }
@@ -433,7 +435,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                 if (last != 0) {
                   last[1] = '\0';
                 }
-                if (currentDirectory[strlen(currentDirectory) - 1] == '/' && strlen(currentDirectory) > 1) {
+                if (currentDirectory[strlen(currentDirectory) - 1] == '/' &&
+                    strlen(currentDirectory) > 1) {
                   currentDirectory[strlen(currentDirectory) - 1] = '\0';
                 }
                 Serial.printf("chdir to .. (%s)\n", currentDirectory);
@@ -459,6 +462,18 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
             needToCompleteRedraw = true;
             break;
           } else {
+            if (currentDirectory[strlen(currentDirectory) - 1] == '/') {
+              currentDirectory[strlen(currentDirectory) - 1] = '\0';
+            }
+            if (selectedPath[0] == '/') {
+              strncat(currentDirectory, selectedPath, MAX_PATH_SIZE);
+            } else {
+              strncat(currentDirectory, "/", MAX_PATH_SIZE);
+              strncat(currentDirectory, selectedPath, MAX_PATH_SIZE);
+            }
+            Serial.printf("Selected %s", currentDirectory);
+            memset(result, 0, resultSize);
+            strncpy(result, currentDirectory, resultSize);
             return true;
           }
         }
