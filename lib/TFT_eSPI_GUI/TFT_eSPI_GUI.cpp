@@ -172,31 +172,69 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   }
 }
 
+bool getFileCount(SdFs& sd, char* start, uint32_t& result) {
+  FsFile dir = sd.open(start, O_RDONLY);
+  if (!dir) {
+    return false;
+  }
+
+  FsFile file;
+  result = 0;
+
+  dir.rewindDirectory();
+  while (file.openNext(&dir, O_RDONLY)) {
+    file.close();
+    result++;
+  }
+  if (dir.getError()) {
+    return false;
+  } else {
+    dir.close();
+    return true;
+  }
+}
+
+bool getFileNameFromIndex(SdFs& sd, char* start, uint32_t index, char* result,
+                          size_t resultSize) {
+  FsFile dir = sd.open(start, O_RDONLY);
+  if (!dir) {
+    return false;
+  }
+
+  FsFile file;
+  dir.rewindDirectory();
+  for (uint32_t i = 0; i < index; i++) {
+    if (!file.openNext(&dir, O_RDONLY)) {
+      return false;
+    }
+  }
+
+  file.getName(result, resultSize);
+
+  if (file.isDir()) {
+    strncat(result, "/", resultSize);
+  }
+
+  file.close();
+  dir.close();
+
+  return true;
+}
+
 bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                                 Button upButton, Button downButton,
                                 Button selectButton, Button shutterButton,
                                 char* result, size_t resultSize) {
-  const uint8_t menuCount = 20;
-  const char* menu[menuCount] = {"Super duper long menu item",
-                                 "Perfect fit menu item",
-                                 "Actual fit menu item",
-                                 "Menu item 4",
-                                 "Menu item 5",
-                                 "Menu item 6",
-                                 "Menu item 7",
-                                 "Menu item 8",
-                                 "Menu item 9",
-                                 "Menu item 10",
-                                 "Menu item 11",
-                                 "Menu item 12",
-                                 "Menu item 13",
-                                 "Menu item 14",
-                                 "Menu item 15",
-                                 "Menu item 16",
-                                 "Menu item 17",
-                                 "Menu item 18",
-                                 "Menu item 19",
-                                 "Menu item 20"};
+  uint32_t fileCount;
+  if (!getFileCount(sd, startDirectory, fileCount)) {
+    return false;
+  }
+
+  FsFile dir = sd.open(startDirectory, O_RDONLY);
+  FsFile file;
+
+  const size_t MAX_PATH_SIZE = 255;
+  char currentPath[MAX_PATH_SIZE];
 
   const uint8_t charWidth = 6;
   const uint8_t charHeight = 8;
@@ -218,11 +256,14 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   const uint16_t holdToAccelTime = 500;
   const uint16_t moveThrottleTime = 50;
 
+  char menuEntries[maxEntryPerPage][MAX_PATH_SIZE];
+  uint32_t menuEntryOffset = -1;
+
   uint32_t selectedTime = millis();
   uint32_t lastPressTime = millis();
   uint32_t pressTime = 0;
   uint32_t lastMovedTime = millis();
-  const bool showScrollbar = menuCount > maxEntryPerPage;
+  const bool showScrollbar = fileCount > maxEntryPerPage;
   const uint8_t maxCharPerRow =
     (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
 
@@ -257,41 +298,57 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   bool resetAfterPause = false;
 
   while (true) {
-    for (int i = offset;
-         i < min((uint16_t)menuCount, (uint16_t)(offset + maxEntryPerPage));
+    if (menuEntryOffset != offset) {
+      menuEntryOffset = offset;
+
+      for (uint32_t i = offset;
+           i < min((uint16_t)fileCount, (uint16_t)(offset + maxEntryPerPage));
+           i++) {
+        strncpy(menuEntries[i - offset], "Could not read file!", MAX_PATH_SIZE);
+        getFileNameFromIndex(sd, startDirectory, i, menuEntries[i - offset],
+                             MAX_PATH_SIZE);
+      }
+    }
+
+    for (uint32_t i = offset;
+         i < min((uint16_t)fileCount, (uint16_t)(offset + maxEntryPerPage));
          i++) {
+      char* current = menuEntries[i - offset];
+
       if (i == selected) {
         tft.setTextColor(boxColor, textColor);
-      } else {
+        strncpy(currentPath, current, MAX_PATH_SIZE);
+      }
+      else {
         tft.setTextColor(textColor, boxColor);
       }
       tft.setCursor(fontX, fontY + charHeight * (i - offset));
       tft.print(" ");
       if (i == selected) {
         for (uint8_t j = 1;
-             j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
-          tft.print(menu[i][j - 1 + selectedCharOffset]);
+             j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
+          tft.print(current[j - 1 + selectedCharOffset]);
         }
       } else {
         for (uint8_t j = 1;
-             j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
-          tft.print(menu[i][j - 1]);
+             j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
+          tft.print(current[j - 1]);
         }
       }
-      if (strlen(menu[i]) > maxCharPerRow - 3) {
+      if (strlen(current) > maxCharPerRow - 3) {
         tft.print(" ");
       }
-      for (int j = strlen(menu[i]) + 1; j < maxCharPerRow - 1; j++) {
+      for (int j = strlen(current) + 1; j < maxCharPerRow - 1; j++) {
         tft.print(" ");
       }
     }
 
     if (showScrollbar) {
       const uint8_t startY =
-        map(min((int16_t)offset, (int16_t)(menuCount - maxEntryPerPage)), 0,
-            menuCount, scrollBarY, scrollBarY + scrollBarHeight);
+        map(min((int16_t)offset, (int16_t)(fileCount - maxEntryPerPage)), 0,
+            fileCount, scrollBarY, scrollBarY + scrollBarHeight);
       const uint8_t barHeight =
-        map(maxEntryPerPage, 0, menuCount, 0, scrollBarHeight);
+        map(maxEntryPerPage, 0, fileCount, 0, scrollBarHeight);
 
       tft.fillRect(scrollBarX, scrollBarY, scrollBarWidth, scrollBarHeight,
                    boxColor);
@@ -315,7 +372,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
       if (upButton.pressed() ||
           (!upButton.read() && pressTime > holdToAccelTime)) {
         if (selected == 0) {
-          selected = menuCount - 1;
+          selected = fileCount - 1;
         } else {
           selected--;
         }
@@ -325,7 +382,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
       }
       if (downButton.pressed() ||
           (!downButton.read() && pressTime > holdToAccelTime)) {
-        if (selected == menuCount - 1) {
+        if (selected == fileCount - 1) {
           selected = 0;
         } else {
           selected++;
@@ -338,7 +395,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         return true;
       }
       if (millis() - selectedTime > timePerChar &&
-          strlen(menu[selected]) > maxCharPerRow - 3) {
+          strlen(currentPath) > maxCharPerRow - 3) {
         selectedTime = millis();
         if (offsetPauseTicks > 0) {
           offsetPauseTicks--;
@@ -349,8 +406,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
           break;
         } else {
           selectedCharOffset++;
-          if (selectedCharOffset + maxCharPerRow >=
-              strlen(menu[selected]) + 3) {
+          if (selectedCharOffset + maxCharPerRow >= strlen(currentPath) + 3) {
             offsetPauseTicks = startEndPauseTicks;
             resetAfterPause = true;
           }
