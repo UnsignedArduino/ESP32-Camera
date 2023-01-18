@@ -181,10 +181,16 @@ bool getFileCount(SdFs& sd, char* start, uint32_t& result) {
   FsFile file;
   result = 0;
 
+  const size_t MAX_PATH_SIZE = 255;
+  char path[MAX_PATH_SIZE];
+
   dir.rewindDirectory();
   while (file.openNext(&dir, O_RDONLY)) {
+    file.getName(path, MAX_PATH_SIZE);
+    if (!file.isHidden() && strlen(path) > 0) {
+      result++;
+    }
     file.close();
-    result++;
   }
   if (dir.getError()) {
     return false;
@@ -203,9 +209,13 @@ bool getFileNameFromIndex(SdFs& sd, char* start, uint32_t index, char* result,
 
   FsFile file;
   dir.rewindDirectory();
-  for (uint32_t i = 0; i < index; i++) {
+  for (uint32_t i = 0; i < index;) {
     if (!file.openNext(&dir, O_RDONLY)) {
       return false;
+    }
+    file.getName(result, resultSize);
+    if (!file.isHidden() && strlen(result) > 0) {
+      i++;
     }
   }
 
@@ -226,15 +236,14 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                                 Button selectButton, Button shutterButton,
                                 char* result, size_t resultSize) {
   uint32_t fileCount;
-  if (!getFileCount(sd, startDirectory, fileCount)) {
-    return false;
-  }
 
-  FsFile dir = sd.open(startDirectory, O_RDONLY);
+  FsFile dir;
   FsFile file;
 
   const size_t MAX_PATH_SIZE = 255;
-  char currentPath[MAX_PATH_SIZE];
+  char currentDirectory[MAX_PATH_SIZE];
+  strncpy(currentDirectory, startDirectory, MAX_PATH_SIZE);
+  char selectedPath[MAX_PATH_SIZE];
 
   const uint8_t charWidth = 6;
   const uint8_t charHeight = 8;
@@ -256,170 +265,231 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   const uint16_t holdToAccelTime = 500;
   const uint16_t moveThrottleTime = 50;
 
-  char menuEntries[maxEntryPerPage][MAX_PATH_SIZE];
-  uint32_t menuEntryOffset = -1;
-
-  uint32_t selectedTime = millis();
-  uint32_t lastPressTime = millis();
-  uint32_t pressTime = 0;
-  uint32_t lastMovedTime = millis();
-  const bool showScrollbar = fileCount > maxEntryPerPage;
-  const uint8_t maxCharPerRow =
-    (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
-
-  const uint8_t fontX = boxX + charWidth / 2;
-  uint8_t fontY = boxY + charHeight;
-
-  tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
-  tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1, textColor);
-
-  tft.setTextColor(textColor, boxColor);
-  tft.setCursor(fontX, fontY);
-  tft.print(" File explorer");
-
-  fontY += charHeight * 1.5;
-
-  tft.setCursor(fontX, fontY);
-  tft.print(" ");
-  tft.print(startDirectory);
-
-  fontY += charHeight * 1.5;
-
-  const uint8_t scrollBarX = boxX + boxWidth - charWidth;
-  const uint8_t scrollBarY = fontY;
-  const uint8_t scrollBarWidth = charWidth / 2;
-  const uint8_t scrollBarHeight = maxEntryPerPage * charHeight;
-
-  uint8_t offset = 0;
-  uint8_t selected = 0;
-
-  uint8_t offsetPauseTicks = startEndPauseTicks;
-  uint8_t selectedCharOffset = 0;
-  bool resetAfterPause = false;
+  const uint8_t extraOptionsCount = 2;
+  const char* extraOptions[extraOptionsCount] = {"Exit", ".."};
 
   while (true) {
-    if (menuEntryOffset != offset) {
-      menuEntryOffset = offset;
+    char menuEntries[maxEntryPerPage][MAX_PATH_SIZE];
+    uint32_t menuEntryOffset = -1;
+
+    // dir = sd.open(currentDirectory, O_RDONLY);
+    if (!getFileCount(sd, currentDirectory, fileCount)) {
+      return false;
+    }
+
+    Serial.printf("%lu files in %s\n", fileCount, currentDirectory);
+
+    fileCount += extraOptionsCount;
+
+    uint32_t selectedTime = millis();
+    uint32_t lastPressTime = millis();
+    uint32_t pressTime = 0;
+    uint32_t lastMovedTime = millis();
+    const bool showScrollbar = fileCount > maxEntryPerPage;
+    const uint8_t maxCharPerRow =
+      (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
+
+    const uint8_t fontX = boxX + charWidth / 2;
+    uint8_t fontY = boxY + charHeight;
+
+    tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
+    tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1,
+                      textColor);
+
+    tft.setTextColor(textColor, boxColor);
+    tft.setCursor(fontX, fontY);
+    tft.print(" File explorer");
+
+    fontY += charHeight * 1.5;
+
+    tft.setCursor(fontX, fontY);
+    tft.print(" ");
+    tft.print(currentDirectory);
+
+    fontY += charHeight * 1.5;
+
+    const uint8_t scrollBarX = boxX + boxWidth - charWidth;
+    const uint8_t scrollBarY = fontY;
+    const uint8_t scrollBarWidth = charWidth / 2;
+    const uint8_t scrollBarHeight = maxEntryPerPage * charHeight;
+
+    uint8_t offset = 0;
+    uint8_t selected = 0;
+
+    uint8_t offsetPauseTicks = startEndPauseTicks;
+    uint8_t selectedCharOffset = 0;
+    bool resetAfterPause = false;
+
+    bool needToCompleteRedraw = false;
+
+    while (!needToCompleteRedraw) {
+      if (menuEntryOffset != offset) {
+        menuEntryOffset = offset;
+
+        for (uint32_t i = offset;
+             i < min((uint16_t)fileCount, (uint16_t)(offset + maxEntryPerPage));
+             i++) {
+          if (i < extraOptionsCount) {
+            strncpy(menuEntries[i - offset], extraOptions[i], MAX_PATH_SIZE);
+          } else {
+            strncpy(menuEntries[i - offset], "Could not read file!",
+                    MAX_PATH_SIZE);
+            getFileNameFromIndex(sd, currentDirectory, i - extraOptionsCount,
+                                 menuEntries[i - offset], MAX_PATH_SIZE);
+          }
+        }
+      }
 
       for (uint32_t i = offset;
            i < min((uint16_t)fileCount, (uint16_t)(offset + maxEntryPerPage));
            i++) {
-        strncpy(menuEntries[i - offset], "Could not read file!", MAX_PATH_SIZE);
-        getFileNameFromIndex(sd, startDirectory, i, menuEntries[i - offset],
-                             MAX_PATH_SIZE);
-      }
-    }
+        char* current = menuEntries[i - offset];
 
-    for (uint32_t i = offset;
-         i < min((uint16_t)fileCount, (uint16_t)(offset + maxEntryPerPage));
-         i++) {
-      char* current = menuEntries[i - offset];
-
-      if (i == selected) {
-        tft.setTextColor(boxColor, textColor);
-        strncpy(currentPath, current, MAX_PATH_SIZE);
-      }
-      else {
-        tft.setTextColor(textColor, boxColor);
-      }
-      tft.setCursor(fontX, fontY + charHeight * (i - offset));
-      tft.print(" ");
-      if (i == selected) {
-        for (uint8_t j = 1;
-             j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
-          tft.print(current[j - 1 + selectedCharOffset]);
+        if (i == selected) {
+          tft.setTextColor(boxColor, textColor);
+          strncpy(selectedPath, current, MAX_PATH_SIZE);
+          Serial.printf("Selected file: \"%s\"\n", selectedPath);
+        } else {
+          tft.setTextColor(textColor, boxColor);
         }
-      } else {
-        for (uint8_t j = 1;
-             j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
-          tft.print(current[j - 1]);
-        }
-      }
-      if (strlen(current) > maxCharPerRow - 3) {
+        tft.setCursor(fontX, fontY + charHeight * (i - offset));
         tft.print(" ");
-      }
-      for (int j = strlen(current) + 1; j < maxCharPerRow - 1; j++) {
-        tft.print(" ");
-      }
-    }
-
-    if (showScrollbar) {
-      const uint8_t startY =
-        map(min((int16_t)offset, (int16_t)(fileCount - maxEntryPerPage)), 0,
-            fileCount, scrollBarY, scrollBarY + scrollBarHeight);
-      const uint8_t barHeight =
-        map(maxEntryPerPage, 0, fileCount, 0, scrollBarHeight);
-
-      tft.fillRect(scrollBarX, scrollBarY, scrollBarWidth, scrollBarHeight,
-                   boxColor);
-      tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
-    }
-
-    while (millis() - lastMovedTime < moveThrottleTime) {
-      delay(1);
-    }
-
-    while (true) {
-      if (!upButton.read() || !downButton.read()) {
-        if (lastPressTime > 0) {
-          pressTime += millis() - lastPressTime;
-        }
-        lastPressTime = millis();
-      } else {
-        pressTime = 0;
-        lastPressTime = 0;
-      }
-      if (upButton.pressed() ||
-          (!upButton.read() && pressTime > holdToAccelTime)) {
-        if (selected == 0) {
-          selected = fileCount - 1;
-        } else {
-          selected--;
-        }
-        selectedCharOffset = 0;
-        selectedTime = millis();
-        break;
-      }
-      if (downButton.pressed() ||
-          (!downButton.read() && pressTime > holdToAccelTime)) {
-        if (selected == fileCount - 1) {
-          selected = 0;
-        } else {
-          selected++;
-        }
-        selectedCharOffset = 0;
-        selectedTime = millis();
-        break;
-      }
-      if (selectButton.pressed()) {
-        return true;
-      }
-      if (millis() - selectedTime > timePerChar &&
-          strlen(currentPath) > maxCharPerRow - 3) {
-        selectedTime = millis();
-        if (offsetPauseTicks > 0) {
-          offsetPauseTicks--;
-        } else if (resetAfterPause) {
-          resetAfterPause = false;
-          selectedCharOffset = 0;
-          offsetPauseTicks = startEndPauseTicks;
-          break;
-        } else {
-          selectedCharOffset++;
-          if (selectedCharOffset + maxCharPerRow >= strlen(currentPath) + 3) {
-            offsetPauseTicks = startEndPauseTicks;
-            resetAfterPause = true;
+        if (i == selected) {
+          for (uint8_t j = 1;
+               j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
+            tft.print(current[j - 1 + selectedCharOffset]);
           }
-          break;
+        } else {
+          for (uint8_t j = 1;
+               j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
+            tft.print(current[j - 1]);
+          }
+        }
+        if (strlen(current) > maxCharPerRow - 3) {
+          tft.print(" ");
+        }
+        for (int j = strlen(current) + 1; j < maxCharPerRow - 1; j++) {
+          tft.print(" ");
         }
       }
-    }
-    if (selected >= offset + maxEntryPerPage) {
-      offset += selected - (offset + maxEntryPerPage) + 1;
-    } else if (selected < offset) {
-      offset = selected;
-    }
 
-    lastMovedTime = millis();
+      if (showScrollbar) {
+        const uint8_t startY =
+          map(min((int16_t)offset, (int16_t)(fileCount - maxEntryPerPage)), 0,
+              fileCount, scrollBarY, scrollBarY + scrollBarHeight);
+        const uint8_t barHeight =
+          map(maxEntryPerPage, 0, fileCount, 0, scrollBarHeight);
+
+        tft.fillRect(scrollBarX, scrollBarY, scrollBarWidth, scrollBarHeight,
+                     boxColor);
+        tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
+      }
+
+      while (millis() - lastMovedTime < moveThrottleTime) {
+        delay(1);
+      }
+
+      while (true) {
+        if (!upButton.read() || !downButton.read()) {
+          if (lastPressTime > 0) {
+            pressTime += millis() - lastPressTime;
+          }
+          lastPressTime = millis();
+        } else {
+          pressTime = 0;
+          lastPressTime = 0;
+        }
+        if (upButton.pressed() ||
+            (!upButton.read() && pressTime > holdToAccelTime)) {
+          if (selected == 0) {
+            selected = fileCount - 1;
+          } else {
+            selected--;
+          }
+          selectedCharOffset = 0;
+          selectedTime = millis();
+          break;
+        }
+        if (downButton.pressed() ||
+            (!downButton.read() && pressTime > holdToAccelTime)) {
+          if (selected == fileCount - 1) {
+            selected = 0;
+          } else {
+            selected++;
+          }
+          selectedCharOffset = 0;
+          selectedTime = millis();
+          break;
+        }
+        if (selectButton.pressed()) {
+          if (selected < extraOptionsCount) {
+            switch (selected) {
+              default:
+              case 0: {
+                return false;
+              }
+              case 1: {
+                char* last = strrchr(currentDirectory, '/');
+                if (last != 0) {
+                  last[1] = '\0';
+                }
+                if (currentDirectory[strlen(currentDirectory) - 1] == '/' && strlen(currentDirectory) > 1) {
+                  currentDirectory[strlen(currentDirectory) - 1] = '\0';
+                }
+                Serial.printf("chdir to .. (%s)\n", currentDirectory);
+                needToCompleteRedraw = true;
+                break;
+              }
+            }
+            break;
+          } else if (selectedPath[strlen(selectedPath) - 1] == '/') {
+            if (currentDirectory[strlen(currentDirectory) - 1] == '/') {
+              currentDirectory[strlen(currentDirectory) - 1] = '\0';
+            }
+            if (selectedPath[0] == '/') {
+              strncat(currentDirectory, selectedPath, MAX_PATH_SIZE);
+            } else {
+              strncat(currentDirectory, "/", MAX_PATH_SIZE);
+              strncat(currentDirectory, selectedPath, MAX_PATH_SIZE);
+            }
+            if (currentDirectory[strlen(currentDirectory) - 1] == '/') {
+              currentDirectory[strlen(currentDirectory) - 1] = '\0';
+            }
+            Serial.printf("chdir to %s (%s)\n", selectedPath, currentDirectory);
+            needToCompleteRedraw = true;
+            break;
+          } else {
+            return true;
+          }
+        }
+        if (millis() - selectedTime > timePerChar &&
+            strlen(selectedPath) > maxCharPerRow - 3) {
+          selectedTime = millis();
+          if (offsetPauseTicks > 0) {
+            offsetPauseTicks--;
+          } else if (resetAfterPause) {
+            resetAfterPause = false;
+            selectedCharOffset = 0;
+            offsetPauseTicks = startEndPauseTicks;
+            break;
+          } else {
+            selectedCharOffset++;
+            if (selectedCharOffset + maxCharPerRow >=
+                strlen(selectedPath) + 3) {
+              offsetPauseTicks = startEndPauseTicks;
+              resetAfterPause = true;
+            }
+            break;
+          }
+        }
+      }
+      if (selected >= offset + maxEntryPerPage) {
+        offset += selected - (offset + maxEntryPerPage) + 1;
+      } else if (selected < offset) {
+        offset = selected;
+      }
+
+      lastMovedTime = millis();
+    }
   }
 }

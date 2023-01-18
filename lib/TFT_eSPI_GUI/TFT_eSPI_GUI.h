@@ -11,8 +11,7 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
 
 bool getFileCount(SdFs& sd, char* start, uint32_t& result);
 
-bool getFileNameFromIndex(SdFs& sd, char* start, uint32_t index, char* result,
-                          size_t resultSize);
+bool getFileNameFromindex(SdFs& sd, char* start, uint32_t index, char* result,  size_t resultSize);
 
 bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                                 Button upButton, Button downButton,

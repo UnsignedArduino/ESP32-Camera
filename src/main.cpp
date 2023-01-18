@@ -131,20 +131,25 @@ void loop() {
   // }
 
   if (selectButton.pressed()) {
-    switch (TFT_eSPI_GUI_menu(tft, optionsTitle, optionsMenu, optionsCount,
-                              upButton, downButton, selectButton)) {
-      default:
-      case 0: {
-        break;
-      }
-      case 1: {
-        const size_t MAX_PATH_SIZE = 255;
-        char result[MAX_PATH_SIZE];
-        result[0] = '\0';
-        TFT_eSPI_GUI_file_explorer(tft, sd, "/", upButton, downButton,
-                                   selectButton, shutterButton, result,
-                                   MAX_PATH_SIZE);
-        break;
+    bool exitOptionsMenu = false;
+    while (!exitOptionsMenu) {
+      switch (TFT_eSPI_GUI_menu(tft, optionsTitle, optionsMenu, optionsCount,
+                                upButton, downButton, selectButton)) {
+        default:
+        case 0: {
+          exitOptionsMenu = true;
+          break;
+        }
+        case 1: {
+          const size_t MAX_PATH_SIZE = 255;
+          char result[MAX_PATH_SIZE];
+          if (TFT_eSPI_GUI_file_explorer(tft, sd, "/", upButton, downButton,
+                                         selectButton, shutterButton, result,
+                                         MAX_PATH_SIZE)) {
+            exitOptionsMenu = true;
+          }
+          break;
+        }
       }
     }
   }
