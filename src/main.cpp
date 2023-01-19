@@ -87,9 +87,9 @@ bool hardwareBegin() {
     Serial.println("ok!");
   }
 
-  // if (!arduCamera.begin()) {
-  //   goto hardwareBeginError;
-  // }
+  if (!arduCamera.begin()) {
+    goto hardwareBeginError;
+  }
 
   upButton.begin();
   selectButton.begin();
@@ -118,17 +118,17 @@ void setup() {
 }
 
 void loop() {
-  // memset(previewBuf, 0, PREVIEW_BUF_SIZE);
-  // const size_t previewSize =
-  //   arduCamera.captureToMemory(previewBuf, PREVIEW_BUF_SIZE);
-  // if (previewSize > 0) {
-  //   if (jpeg.openRAM(previewBuf, previewSize, JPEGDraw)) {
-  //     tft.startWrite();
-  //     jpeg.decode(0, 0, 0);
-  //     tft.endWrite();
-  //     jpeg.close();
-  //   }
-  // }
+  memset(previewBuf, 0, PREVIEW_BUF_SIZE);
+  const size_t previewSize =
+    arduCamera.captureToMemory(previewBuf, PREVIEW_BUF_SIZE);
+  if (previewSize > 0) {
+    if (jpeg.openRAM(previewBuf, previewSize, JPEGDraw)) {
+      tft.startWrite();
+      jpeg.decode(0, 0, 0);
+      tft.endWrite();
+      jpeg.close();
+    }
+  }
 
   if (selectButton.pressed()) {
     bool exitOptionsMenu = false;
