@@ -14,7 +14,7 @@
 ArduCamera arduCamera;
 
 const uint8_t SD_CS = 5;
-#define SPI_CLOCK SD_SCK_MHZ(16)
+#define SPI_CLOCK SD_SCK_MHZ(24)
 #define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK)
 
 RTC_DS3231 rtc;

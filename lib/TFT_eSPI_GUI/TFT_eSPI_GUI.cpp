@@ -266,7 +266,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   const uint16_t moveThrottleTime = 50;
 
   const uint8_t extraOptionsCount = 2;
-  const char* extraOptions[extraOptionsCount] = {"Exit", ".."};
+  const char* extraOptions[extraOptionsCount] = {"Exit", "Up a folder"};
 
   while (true) {
     char menuEntries[maxEntryPerPage][MAX_PATH_SIZE];
@@ -288,6 +288,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
     const bool showScrollbar = fileCount > maxEntryPerPage;
     const uint8_t maxCharPerRow =
       (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
+    const uint8_t maxCharInTitle = boxWidth / charWidth - 3;
 
     const uint8_t fontX = boxX + charWidth / 2;
     uint8_t fontY = boxY + charHeight;
@@ -302,9 +303,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
 
     fontY += charHeight * 1.5;
 
-    tft.setCursor(fontX, fontY);
-    tft.print(" ");
-    tft.print(currentDirectory);
+    const uint16_t titleX = fontX;
+    const uint16_t titleY = fontY;
 
     fontY += charHeight * 1.5;
 
@@ -319,6 +319,11 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
     uint8_t offsetPauseTicks = startEndPauseTicks;
     uint8_t selectedCharOffset = 0;
     bool resetAfterPause = false;
+
+    uint32_t lastTitleShiftTime = millis();
+    uint8_t titleOffsetPauseTicks = startEndPauseTicks;
+    uint8_t titleSelectedCharOffset = 0;
+    bool titleResetAfterPause = false;
 
     bool needToCompleteRedraw = false;
 
@@ -342,6 +347,17 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         }
       }
 
+      tft.setTextColor(textColor, boxColor);
+      tft.setCursor(titleX, titleY);
+      tft.print(" ");
+      // Serial.printf("Title: %s\n", currentDirectory);
+      for (uint8_t i = 1;
+           i < min((size_t)maxCharInTitle, strlen(currentDirectory) + 1); i++) {
+        tft.print(currentDirectory[i - 1 + titleSelectedCharOffset]);
+        // Serial.print(currentDirectory[i - 1 + titleSelectedCharOffset]);
+      }
+      // Serial.println();
+
       for (uint32_t i = offset;
            i < min((uint16_t)fileCount, (uint16_t)(offset + maxEntryPerPage));
            i++) {
@@ -350,7 +366,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         if (i == selected) {
           tft.setTextColor(boxColor, textColor);
           strncpy(selectedPath, current, MAX_PATH_SIZE);
-          Serial.printf("Selected file: \"%s\"\n", selectedPath);
+          // Serial.printf("Selected file: \"%s\"\n", selectedPath);
         } else {
           tft.setTextColor(textColor, boxColor);
         }
@@ -493,6 +509,26 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
                 strlen(selectedPath) + 3) {
               offsetPauseTicks = startEndPauseTicks;
               resetAfterPause = true;
+            }
+            break;
+          }
+        }
+        if (millis() - lastTitleShiftTime > timePerChar &&
+            strlen(currentDirectory) > maxCharInTitle) {
+          lastTitleShiftTime = millis();
+          if (titleOffsetPauseTicks > 0) {
+            titleOffsetPauseTicks--;
+          } else if (titleResetAfterPause) {
+            titleResetAfterPause = false;
+            titleSelectedCharOffset = 0;
+            titleOffsetPauseTicks = startEndPauseTicks;
+            break;
+          } else {
+            titleSelectedCharOffset++;
+            if (titleSelectedCharOffset + maxCharInTitle >=
+                strlen(currentDirectory) + 1) {
+              titleOffsetPauseTicks = startEndPauseTicks;
+              titleResetAfterPause = true;
             }
             break;
           }
