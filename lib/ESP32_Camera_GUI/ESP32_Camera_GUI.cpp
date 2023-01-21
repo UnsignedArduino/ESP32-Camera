@@ -1,11 +1,22 @@
 #include <Arduino.h>
 #include <TFT_eSPI.h>
-#include "TFT_eSPI_GUI.h"
+#include "ESP32_Camera_GUI.h"
+
+bool ESP32CameraGUI::begin(TFT_eSPI* tft, SdFs* sd, RTC_DS3231* rtc, Button* upButton,
+               Button* downButton, Button* selectButton, Button* shutterButton) {
+  this->tft = tft;
+  this->sd = sd;
+  this->rtc = rtc;
+  this->upButton = upButton;
+  this->downButton = downButton;
+  this->selectButton = selectButton;
+  this->shutterButton = shutterButton;
+  return true;
+}
 
 // https://github.com/adafruit/Adafruit_Arcada/blob/master/Adafruit_Arcada_Alerts.cpp#L200
-uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
-                          uint8_t menuCount, Button upButton, Button downButton,
-                          Button selectButton) {
+uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
+                             uint8_t menuCount) {
   const uint8_t charWidth = 6;
   const uint8_t charHeight = 8;
   const uint16_t boxColor = TFT_WHITE;
@@ -15,8 +26,8 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   const uint8_t bottomPadding = 16;
   const uint8_t leftPadding = 8;
 
-  const uint16_t boxWidth = tft.width() - leftPadding - rightPadding;
-  const uint16_t boxHeight = tft.height() - topPadding - bottomPadding;
+  const uint16_t boxWidth = this->tft->width() - leftPadding - rightPadding;
+  const uint16_t boxHeight = this->tft->height() - topPadding - bottomPadding;
   const uint16_t boxX = leftPadding;
   const uint16_t boxY = topPadding;
 
@@ -37,13 +48,15 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   const uint8_t fontX = boxX + charWidth / 2;
   uint8_t fontY = boxY + charHeight;
 
-  tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
-  tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1, textColor);
+  this->tft->fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1,
+                           boxColor);
+  this->tft->drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1,
+                           textColor);
 
-  tft.setTextColor(textColor, boxColor);
-  tft.setCursor(fontX, fontY);
-  tft.print(" ");
-  tft.print(title);
+  this->tft->setTextColor(textColor, boxColor);
+  this->tft->setCursor(fontX, fontY);
+  this->tft->print(" ");
+  this->tft->print(title);
 
   fontY += charHeight * 1.5;
 
@@ -64,28 +77,28 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
          i < min((uint16_t)menuCount, (uint16_t)(offset + maxEntryPerPage));
          i++) {
       if (i == selected) {
-        tft.setTextColor(boxColor, textColor);
+        this->tft->setTextColor(boxColor, textColor);
       } else {
-        tft.setTextColor(textColor, boxColor);
+        this->tft->setTextColor(textColor, boxColor);
       }
-      tft.setCursor(fontX, fontY + charHeight * (i - offset));
-      tft.print(" ");
+      this->tft->setCursor(fontX, fontY + charHeight * (i - offset));
+      this->tft->print(" ");
       if (i == selected) {
         for (uint8_t j = 1;
              j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
-          tft.print(menu[i][j - 1 + selectedCharOffset]);
+          this->tft->print(menu[i][j - 1 + selectedCharOffset]);
         }
       } else {
         for (uint8_t j = 1;
              j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
-          tft.print(menu[i][j - 1]);
+          this->tft->print(menu[i][j - 1]);
         }
       }
       if (strlen(menu[i]) > maxCharPerRow - 3) {
-        tft.print(" ");
+        this->tft->print(" ");
       }
       for (int j = strlen(menu[i]); j < maxCharPerRow - 2; j++) {
-        tft.print(" ");
+        this->tft->print(" ");
       }
     }
 
@@ -96,9 +109,10 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
       const uint8_t barHeight =
         map(maxEntryPerPage, 0, menuCount, 0, scrollBarHeight);
 
-      tft.fillRect(scrollBarX, scrollBarY, scrollBarWidth, scrollBarHeight,
-                   boxColor);
-      tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
+      this->tft->fillRect(scrollBarX, scrollBarY, scrollBarWidth,
+                          scrollBarHeight, boxColor);
+      this->tft->fillRect(scrollBarX, startY, scrollBarWidth, barHeight,
+                          textColor);
     }
 
     while (millis() - lastMovedTime < moveThrottleTime) {
@@ -106,7 +120,7 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
     }
 
     while (true) {
-      if (!upButton.read() || !downButton.read()) {
+      if (!this->upButton->read() || !this->downButton->read()) {
         if (lastPressTime > 0) {
           pressTime += millis() - lastPressTime;
         }
@@ -115,8 +129,8 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
         pressTime = 0;
         lastPressTime = 0;
       }
-      if (upButton.pressed() ||
-          (!upButton.read() && pressTime > holdToAccelTime)) {
+      if (this->upButton->pressed() ||
+          (!this->upButton->read() && pressTime > holdToAccelTime)) {
         if (selected == 0) {
           selected = menuCount - 1;
         } else {
@@ -126,8 +140,8 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
         selectedTime = millis();
         break;
       }
-      if (downButton.pressed() ||
-          (!downButton.read() && pressTime > holdToAccelTime)) {
+      if (this->downButton->pressed() ||
+          (!this->downButton->read() && pressTime > holdToAccelTime)) {
         if (selected == menuCount - 1) {
           selected = 0;
         } else {
@@ -137,7 +151,7 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
         selectedTime = millis();
         break;
       }
-      if (selectButton.pressed()) {
+      if (this->selectButton->pressed()) {
         return selected;
       }
       if (millis() - selectedTime > timePerChar &&
@@ -172,69 +186,8 @@ uint8_t TFT_eSPI_GUI_menu(TFT_eSPI tft, const char* title, const char** menu,
   }
 }
 
-bool getFileCount(SdFs& sd, char* start, uint32_t& result) {
-  FsFile dir = sd.open(start, O_RDONLY);
-  if (!dir) {
-    return false;
-  }
-
-  FsFile file;
-  result = 0;
-
-  const size_t MAX_PATH_SIZE = 255;
-  char path[MAX_PATH_SIZE];
-
-  dir.rewindDirectory();
-  while (file.openNext(&dir, O_RDONLY)) {
-    file.getName(path, MAX_PATH_SIZE);
-    if (!file.isHidden() && strlen(path) > 0) {
-      result++;
-    }
-    file.close();
-  }
-  if (dir.getError()) {
-    return false;
-  } else {
-    dir.close();
-    return true;
-  }
-}
-
-bool getFileNameFromIndex(SdFs& sd, char* start, uint32_t index, char* result,
-                          size_t resultSize) {
-  FsFile dir = sd.open(start, O_RDONLY);
-  if (!dir) {
-    return false;
-  }
-
-  FsFile file;
-  dir.rewindDirectory();
-  for (uint32_t i = 0; i <= index;) {
-    if (!file.openNext(&dir, O_RDONLY)) {
-      return false;
-    }
-    file.getName(result, resultSize);
-    if (!file.isHidden() && strlen(result) > 0) {
-      i++;
-    }
-  }
-
-  file.getName(result, resultSize);
-
-  if (file.isDir()) {
-    strncat(result, "/", resultSize);
-  }
-
-  file.close();
-  dir.close();
-
-  return true;
-}
-
-bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
-                                Button upButton, Button downButton,
-                                Button selectButton, Button shutterButton,
-                                char* result, size_t resultSize) {
+bool ESP32CameraGUI::fileExplorer(char* startDirectory, char* result,
+                                  size_t resultSize) {
   uint32_t fileCount;
 
   FsFile dir;
@@ -254,8 +207,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
   const uint8_t bottomPadding = 16;
   const uint8_t leftPadding = 8;
 
-  const uint16_t boxWidth = tft.width() - leftPadding - rightPadding;
-  const uint16_t boxHeight = tft.height() - topPadding - bottomPadding;
+  const uint16_t boxWidth = this->tft->width() - leftPadding - rightPadding;
+  const uint16_t boxHeight = this->tft->height() - topPadding - bottomPadding;
   const uint16_t boxX = leftPadding;
   const uint16_t boxY = topPadding;
 
@@ -273,7 +226,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
     uint32_t menuEntryOffset = -1;
 
     // dir = sd.open(currentDirectory, O_RDONLY);
-    if (!getFileCount(sd, currentDirectory, fileCount)) {
+    if (!this->getFileCount(currentDirectory, fileCount)) {
       return false;
     }
 
@@ -293,13 +246,14 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
     const uint8_t fontX = boxX + charWidth / 2;
     uint8_t fontY = boxY + charHeight;
 
-    tft.fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1, boxColor);
-    tft.drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1,
-                      textColor);
+    this->tft->fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1,
+                             boxColor);
+    this->tft->drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1,
+                             textColor);
 
-    tft.setTextColor(textColor, boxColor);
-    tft.setCursor(fontX, fontY);
-    tft.print(" File explorer");
+    this->tft->setTextColor(textColor, boxColor);
+    this->tft->setCursor(fontX, fontY);
+    this->tft->print(" File explorer");
 
     fontY += charHeight * 1.5;
 
@@ -339,21 +293,21 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
           } else {
             strncpy(menuEntries[i - offset], "Could not read file!",
                     MAX_PATH_SIZE);
-            getFileNameFromIndex(sd, currentDirectory, i - extraOptionsCount,
-                                 menuEntries[i - offset], MAX_PATH_SIZE);
+            this->getFileNameFromIndex(currentDirectory, i - extraOptionsCount,
+                                       menuEntries[i - offset], MAX_PATH_SIZE);
             // Serial.printf("File at index %d (menu entry %d) is \"%s\"\n",
             //               i - extraOptionsCount, i, menuEntries[i - offset]);
           }
         }
       }
 
-      tft.setTextColor(textColor, boxColor);
-      tft.setCursor(titleX, titleY);
-      tft.print(" ");
+      this->tft->setTextColor(textColor, boxColor);
+      this->tft->setCursor(titleX, titleY);
+      this->tft->print(" ");
       // Serial.printf("Title: %s\n", currentDirectory);
       for (uint8_t i = 1;
            i < min((size_t)maxCharInTitle, strlen(currentDirectory) + 1); i++) {
-        tft.print(currentDirectory[i - 1 + titleSelectedCharOffset]);
+        this->tft->print(currentDirectory[i - 1 + titleSelectedCharOffset]);
         // Serial.print(currentDirectory[i - 1 + titleSelectedCharOffset]);
       }
       // Serial.println();
@@ -364,30 +318,30 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         char* current = menuEntries[i - offset];
 
         if (i == selected) {
-          tft.setTextColor(boxColor, textColor);
+          this->tft->setTextColor(boxColor, textColor);
           strncpy(selectedPath, current, MAX_PATH_SIZE);
           // Serial.printf("Selected file: \"%s\"\n", selectedPath);
         } else {
-          tft.setTextColor(textColor, boxColor);
+          this->tft->setTextColor(textColor, boxColor);
         }
-        tft.setCursor(fontX, fontY + charHeight * (i - offset));
-        tft.print(" ");
+        this->tft->setCursor(fontX, fontY + charHeight * (i - offset));
+        this->tft->print(" ");
         if (i == selected) {
           for (uint8_t j = 1;
                j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
-            tft.print(current[j - 1 + selectedCharOffset]);
+            this->tft->print(current[j - 1 + selectedCharOffset]);
           }
         } else {
           for (uint8_t j = 1;
                j < min((size_t)maxCharPerRow - 2, strlen(current) + 1); j++) {
-            tft.print(current[j - 1]);
+            this->tft->print(current[j - 1]);
           }
         }
         if (strlen(current) > maxCharPerRow - 3) {
-          tft.print(" ");
+          this->tft->print(" ");
         }
         for (int j = strlen(current) + 1; j < maxCharPerRow - 1; j++) {
-          tft.print(" ");
+          this->tft->print(" ");
         }
       }
 
@@ -398,9 +352,10 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
         const uint8_t barHeight =
           map(maxEntryPerPage, 0, fileCount, 0, scrollBarHeight);
 
-        tft.fillRect(scrollBarX, scrollBarY, scrollBarWidth, scrollBarHeight,
-                     boxColor);
-        tft.fillRect(scrollBarX, startY, scrollBarWidth, barHeight, textColor);
+        this->tft->fillRect(scrollBarX, scrollBarY, scrollBarWidth,
+                            scrollBarHeight, boxColor);
+        this->tft->fillRect(scrollBarX, startY, scrollBarWidth, barHeight,
+                            textColor);
       }
 
       while (millis() - lastMovedTime < moveThrottleTime) {
@@ -408,7 +363,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
       }
 
       while (true) {
-        if (!upButton.read() || !downButton.read()) {
+        if (!this->upButton->read() || !this->downButton->read()) {
           if (lastPressTime > 0) {
             pressTime += millis() - lastPressTime;
           }
@@ -417,8 +372,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
           pressTime = 0;
           lastPressTime = 0;
         }
-        if (upButton.pressed() ||
-            (!upButton.read() && pressTime > holdToAccelTime)) {
+        if (this->upButton->pressed() ||
+            (!this->upButton->read() && pressTime > holdToAccelTime)) {
           if (selected == 0) {
             selected = fileCount - 1;
           } else {
@@ -428,8 +383,8 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
           selectedTime = millis();
           break;
         }
-        if (downButton.pressed() ||
-            (!downButton.read() && pressTime > holdToAccelTime)) {
+        if (this->downButton->pressed() ||
+            (!this->downButton->read() && pressTime > holdToAccelTime)) {
           if (selected == fileCount - 1) {
             selected = 0;
           } else {
@@ -439,7 +394,7 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
           selectedTime = millis();
           break;
         }
-        if (selectButton.pressed()) {
+        if (this->selectButton->pressed()) {
           if (selected < extraOptionsCount) {
             switch (selected) {
               default:
@@ -543,4 +498,63 @@ bool TFT_eSPI_GUI_file_explorer(TFT_eSPI tft, SdFs& sd, char* startDirectory,
       lastMovedTime = millis();
     }
   }
+}
+
+bool ESP32CameraGUI::getFileCount(char* start, uint32_t& result) {
+  FsFile dir = this->sd->open(start, O_RDONLY);
+  if (!dir) {
+    return false;
+  }
+
+  FsFile file;
+  result = 0;
+
+  const size_t MAX_PATH_SIZE = 255;
+  char path[MAX_PATH_SIZE];
+
+  dir.rewindDirectory();
+  while (file.openNext(&dir, O_RDONLY)) {
+    file.getName(path, MAX_PATH_SIZE);
+    if (!file.isHidden() && strlen(path) > 0) {
+      result++;
+    }
+    file.close();
+  }
+  if (dir.getError()) {
+    return false;
+  } else {
+    dir.close();
+    return true;
+  }
+}
+
+bool ESP32CameraGUI::getFileNameFromIndex(char* start, uint32_t index,
+                                          char* result, size_t resultSize) {
+  FsFile dir = this->sd->open(start, O_RDONLY);
+  if (!dir) {
+    return false;
+  }
+
+  FsFile file;
+  dir.rewindDirectory();
+  for (uint32_t i = 0; i <= index;) {
+    if (!file.openNext(&dir, O_RDONLY)) {
+      return false;
+    }
+    file.getName(result, resultSize);
+    if (!file.isHidden() && strlen(result) > 0) {
+      i++;
+    }
+  }
+
+  file.getName(result, resultSize);
+
+  if (file.isDir()) {
+    strncat(result, "/", resultSize);
+  }
+
+  file.close();
+  dir.close();
+
+  return true;
 }

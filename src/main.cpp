@@ -3,7 +3,7 @@
 #include <SPI.h>  // Needed by TFT_eSPI
 #include <SdFat.h>
 #include <TFT_eSPI.h>
-#include <TFT_eSPI_GUI.h>
+#include <ESP32_Camera_GUI.h>
 #include <ArduCAM.h>
 #include <memorysaver.h>  // Needed by ArduCAM
 #include <SD.h>           // Needed by JPEGDEC because it needs "File"
@@ -36,6 +36,8 @@ Button upButton(UP_BUTTON);
 Button selectButton(SELECT_BUTTON);
 Button downButton(DOWN_BUTTON);
 Button shutterButton(SHUTTER_BUTTON);
+
+ESP32CameraGUI gui;
 
 const char* optionsTitle = "Options";
 const uint8_t optionsCount = 2;
@@ -96,6 +98,8 @@ bool hardwareBegin() {
   downButton.begin();
   shutterButton.begin();
 
+  gui.begin(&tft, &sd, &rtc, &upButton, &downButton, &selectButton, &shutterButton);
+
   Serial.println("Hardware initialization...ok!");
 
   return true;
@@ -133,8 +137,7 @@ void loop() {
   if (selectButton.pressed()) {
     bool exitOptionsMenu = false;
     while (!exitOptionsMenu) {
-      switch (TFT_eSPI_GUI_menu(tft, optionsTitle, optionsMenu, optionsCount,
-                                upButton, downButton, selectButton)) {
+      switch (gui.menu(optionsTitle, optionsMenu, optionsCount)) {
         default:
         case 0: {
           exitOptionsMenu = true;
@@ -143,9 +146,7 @@ void loop() {
         case 1: {
           const size_t MAX_PATH_SIZE = 255;
           char result[MAX_PATH_SIZE];
-          if (TFT_eSPI_GUI_file_explorer(tft, sd, "/", upButton, downButton,
-                                         selectButton, shutterButton, result,
-                                         MAX_PATH_SIZE)) {
+          if (gui.fileExplorer("/", result, MAX_PATH_SIZE)) {
             exitOptionsMenu = true;
           }
           break;
