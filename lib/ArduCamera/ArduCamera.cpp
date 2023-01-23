@@ -1,10 +1,7 @@
 #include <Arduino.h>
-#include <Wire.h>
-#include <SPI.h>
 #include "ArduCamera.h"
-#include <ArduCAM.h>
 
-bool ArduCamera::begin() {
+bool ArduCamera::begin(SdFs* sd) {
   if (this->began) {
     return true;
   }
@@ -32,6 +29,8 @@ bool ArduCamera::begin() {
   this->camera->OV2640_set_Special_effects(Normal);
 
   this->camera->clear_fifo_flag();
+
+  this->sd = sd;
 
   Serial.println("Camera initialization...ok!");
 
@@ -131,4 +130,116 @@ size_t ArduCamera::captureToMemory(uint8_t* dest, size_t destSize) {
   this->camera->CS_HIGH();
 
   return i;
+}
+
+int32_t ArduCamera::captureToDisk() {
+  const size_t MAX_PATH_SIZE = 255;
+  char filename[MAX_PATH_SIZE];
+  memset(filename, 0, MAX_PATH_SIZE);
+  FsFile file;
+  const size_t bufSize = 4096;
+  uint8_t buf[bufSize] = {};
+  size_t bytesTransferred = 0;
+  size_t i = 0;
+
+  Serial.println("Starting capture to disk");
+
+  this->camera->flush_fifo();
+  this->camera->clear_fifo_flag();
+  this->camera->start_capture();
+  while (!this->camera->get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
+    ;
+  }
+  uint32_t len = this->camera->read_fifo_length();
+  if (len >= MAX_FIFO_SIZE) {
+    Serial.printf("FIFO oversized (%lu >= %lu)\n", len, MAX_FIFO_SIZE);
+    goto cameraError;
+  } else if (len == 0) {
+    Serial.println("FIFO size is 0");
+    goto cameraError;
+  } else {
+    Serial.printf("FIFO size is %lu\n", len);
+  }
+
+  this->getNextFilename(filename, MAX_PATH_SIZE);
+
+  Serial.printf("Opening file %s\n", filename);
+
+  file = this->sd->open(filename, O_WRONLY | O_CREAT | O_EXCL);
+
+  if (!file) {
+    Serial.println("Failed to open file!");
+    return -2;
+  } else {
+    Serial.println("Open file success");
+  }
+
+  this->camera->CS_LOW();
+  this->camera->set_fifo_burst();
+
+  this->hspi->transfer(0x00);
+  len--;
+
+  while (len > 0) {
+    buf[i] = this->hspi->transfer(0x00);
+    if (i >= bufSize - 1) {
+      if (file.write(buf, bufSize) != bufSize) {
+        goto diskIOError;
+      }
+      i = 0;
+    } else {
+      i++;
+    }
+    bytesTransferred++;
+    len--;
+  }
+
+  if (file.write(buf, i + 1) != i + 1) {
+    goto diskIOError;
+  }
+  file.close();
+
+  this->camera->CS_HIGH();
+
+  Serial.printf("Capture to disk finished (wrote %hu bytes)\n",
+                bytesTransferred);
+  return bytesTransferred;
+
+cameraError:
+  file.close();
+  this->camera->CS_HIGH();
+
+  Serial.println("Capture to disk failed with camera error!");
+
+  return CAMERA_ERROR;
+
+diskIOError:
+  file.close();
+  this->camera->CS_HIGH();
+
+  Serial.println("Capture to disk failed with disk IO error!");
+
+  return DISK_IO_ERROR;
+}
+
+void ArduCamera::setImageSize(uint8_t size) {
+  this->camera->OV2640_set_JPEG_size(size);
+}
+
+void ArduCamera::getNextFilename(char* dest, size_t destSize) {
+  if (!this->sd->exists("/images/")) {
+    this->sd->mkdir("/images/");
+    Serial.println("Created directory /images/");
+  }
+
+  while (true) {
+    snprintf(dest, destSize, "/images/%010u.jpg", this->nextImageNumber);
+    FsFile file = this->sd->open(dest, O_READ);
+    if (!file) {
+      break;
+    } else {
+      file.close();
+      this->nextImageNumber++;
+    }
+  }
 }

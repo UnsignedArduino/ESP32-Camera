@@ -13,6 +13,9 @@
 
 ArduCamera arduCamera;
 
+const uint8_t previewImageSize = OV2640_160x120;
+uint8_t captureImageSize = OV2640_1280x1024;
+
 const uint8_t SD_CS = 5;
 #define SPI_CLOCK SD_SCK_MHZ(24)
 #define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK)
@@ -91,9 +94,10 @@ bool hardwareBegin() {
     Serial.println("ok!");
   }
 
-  if (!arduCamera.begin()) {
+  if (!arduCamera.begin(&sd)) {
     goto hardwareBeginError;
   }
+  arduCamera.setImageSize(previewImageSize);
 
   upButton.begin();
   selectButton.begin();
@@ -155,6 +159,23 @@ void loop() {
           break;
         }
       }
+    }
+  } else if (shutterButton.pressed()) {
+    gui.setBottomText("Taking photo...", UNLIMITED_BOTTOM_TEXT_TIME);
+    gui.drawBottomToolbar();
+    arduCamera.setImageSize(captureImageSize);
+    delay(1000);
+    const size_t result = arduCamera.captureToDisk();
+    arduCamera.setImageSize(previewImageSize);
+    delay(1000);
+    if (result > 0) {
+      gui.setBottomText("Photo saved!", 3000);
+    } else if (result == CAMERA_ERROR) {
+      gui.setBottomText("Camera error!", 3000);
+    } else if (result == DISK_IO_ERROR) {
+      gui.setBottomText("Failed to write to disk!", 3000);
+    } else {
+      gui.setBottomText("Unknown error!", 3000);
     }
   }
 

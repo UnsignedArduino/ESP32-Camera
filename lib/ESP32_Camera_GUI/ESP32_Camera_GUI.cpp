@@ -513,27 +513,52 @@ bool ESP32CameraGUI::fileExplorer(char* startDirectory, char* result,
 
 void ESP32CameraGUI::drawBottomToolbar(bool forceDraw) {
   if (millis() - this->lastBottomToolbarDraw > BOTTOM_TOOLBAR_DRAW_THROTTLE ||
-      forceDraw) {
+      forceDraw || needToRedrawBottom) {
     this->lastBottomToolbarDraw = millis();
+    this->needToRedrawBottom = false;
 
     const uint8_t charWidth = 6;
     const uint8_t charHeight = 8;
 
-    DateTime now = this->rtc->now();
+    const uint16_t textX = 0;
+    const uint16_t textY = this->tft->height() - charHeight;
 
-    this->tft->setCursor(0, this->tft->height() - charHeight);
+    this->tft->setCursor(textX, textY);
     this->tft->setTextColor(TFT_WHITE, TFT_BLACK);
 
-    this->tft->printf("%d/%d/%d %d:%.2d ", now.year(), now.month(), now.day(),
-                      now.hour(), now.minute());
+    if (this->hasCustomBottomText) {
+      this->tft->print(this->customBottomText);
+      this->tft->setTextWrap(false);
+      for (uint8_t i = strlen(this->customBottomText); i < ESP32CameraGUI::maxBottomTextSize+1; i++) {
+        this->tft->print(" ");
+      }
+      this->tft->setTextWrap(true);
 
-    const uint8_t bufSize = 16;
-    char buf[bufSize];
-    memset(buf, 0, bufSize);
+      if (millis() > this->customBottomTextExpire) {
+        this->hasCustomBottomText = false;
+        this->needToRedrawBottom = true;
+      }
+    } else {
+      DateTime now = this->rtc->now();
 
-    snprintf(buf, bufSize, "%d%%", this->getBattPercent());
-    this->tft->setCursor(this->tft->width() - charWidth * strlen(buf),
-                         this->tft->height() - charHeight);
-    this->tft->print(buf);
+      this->tft->printf("%d/%d/%d %d:%.2d ", now.year(), now.month(), now.day(),
+                        now.hour(), now.minute());
+
+      const uint8_t bufSize = 16;
+      char buf[bufSize];
+      memset(buf, 0, bufSize);
+
+      snprintf(buf, bufSize, "%d%%", this->getBattPercent());
+      this->tft->setCursor(this->tft->width() - charWidth * strlen(buf),
+                           this->tft->height() - charHeight);
+      this->tft->print(buf);
+    }
   }
+}
+
+void ESP32CameraGUI::setBottomText(char* text, uint32_t expireTime) {
+  strncpy(this->customBottomText, text, ESP32CameraGUI::maxBottomTextSize);
+  this->needToRedrawBottom = true;
+  this->hasCustomBottomText = true;
+  this->customBottomTextExpire = millis() + expireTime;
 }

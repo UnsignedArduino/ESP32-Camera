@@ -7,6 +7,7 @@
 #include <Button.h>
 
 const uint32_t BOTTOM_TOOLBAR_DRAW_THROTTLE = 1000;
+const uint32_t UNLIMITED_BOTTOM_TEXT_TIME = 0xFFFFFFFF;
 
 class ESP32CameraGUI {
   public:
@@ -17,6 +18,7 @@ class ESP32CameraGUI {
     uint8_t menu(const char* title, const char** menu, uint8_t menuCount);
     bool fileExplorer(char* startDirectory, char* result, size_t resultSize);
     void drawBottomToolbar(bool forceDraw = false);
+    void setBottomText(char* text, uint32_t expireTime);
 
     bool getFileCount(char* start, uint32_t& result);
     bool getFileNameFromIndex(char* start, uint32_t index, char* result,
@@ -30,6 +32,11 @@ class ESP32CameraGUI {
     uint8_t battPin;
 
     uint32_t lastBottomToolbarDraw = 0;
+    bool needToRedrawBottom = true;
+    bool hasCustomBottomText = false;
+    uint32_t customBottomTextExpire = 0;
+    static const size_t maxBottomTextSize = 26;
+    char customBottomText[maxBottomTextSize + 1];
 
     TFT_eSPI* tft;
     SdFs* sd;
