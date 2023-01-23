@@ -101,7 +101,7 @@ bool hardwareBegin() {
   shutterButton.begin();
 
   gui.begin(&tft, &sd, &rtc, &upButton, &downButton, &selectButton,
-            &shutterButton);
+            &shutterButton, BATT_PIN);
 
   Serial.println("Hardware initialization...ok!");
 
@@ -157,4 +157,6 @@ void loop() {
       }
     }
   }
+
+  gui.drawBottomToolbar();
 }

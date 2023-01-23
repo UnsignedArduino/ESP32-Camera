@@ -1,9 +1,10 @@
 #include <Arduino.h>
-#include <TFT_eSPI.h>
 #include "ESP32_Camera_GUI.h"
 
-bool ESP32CameraGUI::begin(TFT_eSPI* tft, SdFs* sd, RTC_DS3231* rtc, Button* upButton,
-               Button* downButton, Button* selectButton, Button* shutterButton) {
+bool ESP32CameraGUI::begin(TFT_eSPI* tft, SdFs* sd, RTC_DS3231* rtc,
+                           Button* upButton, Button* downButton,
+                           Button* selectButton, Button* shutterButton,
+                           uint8_t battPin) {
   this->tft = tft;
   this->sd = sd;
   this->rtc = rtc;
@@ -11,6 +12,8 @@ bool ESP32CameraGUI::begin(TFT_eSPI* tft, SdFs* sd, RTC_DS3231* rtc, Button* upB
   this->downButton = downButton;
   this->selectButton = selectButton;
   this->shutterButton = shutterButton;
+  this->battPin = battPin;
+  pinMode(this->battPin, INPUT);
   return true;
 }
 
@@ -115,11 +118,15 @@ uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
                           textColor);
     }
 
+    this->drawBottomToolbar();
+
     while (millis() - lastMovedTime < moveThrottleTime) {
       delay(1);
     }
 
     while (true) {
+      this->drawBottomToolbar();
+
       if (!this->upButton->read() || !this->downButton->read()) {
         if (lastPressTime > 0) {
           pressTime += millis() - lastPressTime;
@@ -358,11 +365,15 @@ bool ESP32CameraGUI::fileExplorer(char* startDirectory, char* result,
                             textColor);
       }
 
+      this->drawBottomToolbar();
+
       while (millis() - lastMovedTime < moveThrottleTime) {
         delay(1);
       }
 
       while (true) {
+        this->drawBottomToolbar();
+
         if (!this->upButton->read() || !this->downButton->read()) {
           if (lastPressTime > 0) {
             pressTime += millis() - lastPressTime;
@@ -500,61 +511,29 @@ bool ESP32CameraGUI::fileExplorer(char* startDirectory, char* result,
   }
 }
 
-bool ESP32CameraGUI::getFileCount(char* start, uint32_t& result) {
-  FsFile dir = this->sd->open(start, O_RDONLY);
-  if (!dir) {
-    return false;
+void ESP32CameraGUI::drawBottomToolbar(bool forceDraw) {
+  if (millis() - this->lastBottomToolbarDraw > BOTTOM_TOOLBAR_DRAW_THROTTLE ||
+      forceDraw) {
+    this->lastBottomToolbarDraw = millis();
+
+    const uint8_t charWidth = 6;
+    const uint8_t charHeight = 8;
+
+    DateTime now = this->rtc->now();
+
+    this->tft->setCursor(0, this->tft->height() - charHeight);
+    this->tft->setTextColor(TFT_WHITE, TFT_BLACK);
+
+    this->tft->printf("%d/%d/%d %d:%.2d ", now.year(), now.month(), now.day(),
+                      now.hour(), now.minute());
+
+    const uint8_t bufSize = 16;
+    char buf[bufSize];
+    memset(buf, 0, bufSize);
+
+    snprintf(buf, bufSize, "%d%%", this->getBattPercent());
+    this->tft->setCursor(this->tft->width() - charWidth * strlen(buf),
+                         this->tft->height() - charHeight);
+    this->tft->print(buf);
   }
-
-  FsFile file;
-  result = 0;
-
-  const size_t MAX_PATH_SIZE = 255;
-  char path[MAX_PATH_SIZE];
-
-  dir.rewindDirectory();
-  while (file.openNext(&dir, O_RDONLY)) {
-    file.getName(path, MAX_PATH_SIZE);
-    if (!file.isHidden() && strlen(path) > 0) {
-      result++;
-    }
-    file.close();
-  }
-  if (dir.getError()) {
-    return false;
-  } else {
-    dir.close();
-    return true;
-  }
-}
-
-bool ESP32CameraGUI::getFileNameFromIndex(char* start, uint32_t index,
-                                          char* result, size_t resultSize) {
-  FsFile dir = this->sd->open(start, O_RDONLY);
-  if (!dir) {
-    return false;
-  }
-
-  FsFile file;
-  dir.rewindDirectory();
-  for (uint32_t i = 0; i <= index;) {
-    if (!file.openNext(&dir, O_RDONLY)) {
-      return false;
-    }
-    file.getName(result, resultSize);
-    if (!file.isHidden() && strlen(result) > 0) {
-      i++;
-    }
-  }
-
-  file.getName(result, resultSize);
-
-  if (file.isDir()) {
-    strncat(result, "/", resultSize);
-  }
-
-  file.close();
-  dir.close();
-
-  return true;
 }
