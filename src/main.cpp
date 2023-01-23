@@ -27,15 +27,17 @@ const uint32_t PREVIEW_BUF_SIZE = 160 * 120 * 12 / 8;
 uint8_t previewBuf[PREVIEW_BUF_SIZE];
 JPEGDEC jpeg;
 
-const uint8_t UP_BUTTON = 26;
-const uint8_t SELECT_BUTTON = 25;
-const uint8_t DOWN_BUTTON = 33;
-const uint8_t SHUTTER_BUTTON = 32;
+const uint8_t UP_BUTTON = 25;
+const uint8_t SELECT_BUTTON = 33;
+const uint8_t DOWN_BUTTON = 32;
+const uint8_t SHUTTER_BUTTON = 26;
 
 Button upButton(UP_BUTTON);
 Button selectButton(SELECT_BUTTON);
 Button downButton(DOWN_BUTTON);
 Button shutterButton(SHUTTER_BUTTON);
+
+const uint8_t BATT_PIN = A0;
 
 ESP32CameraGUI gui;
 
@@ -98,7 +100,8 @@ bool hardwareBegin() {
   downButton.begin();
   shutterButton.begin();
 
-  gui.begin(&tft, &sd, &rtc, &upButton, &downButton, &selectButton, &shutterButton);
+  gui.begin(&tft, &sd, &rtc, &upButton, &downButton, &selectButton,
+            &shutterButton);
 
   Serial.println("Hardware initialization...ok!");
 
