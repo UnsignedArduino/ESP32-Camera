@@ -55,6 +55,14 @@ int JPEGDraw(JPEGDRAW* pDraw) {
   return 1;
 }
 
+// https://github.com/greiman/SdFat/blob/master/examples/RtcTimestampTest/RtcTimestampTest.ino#L77
+void dateTime(uint16_t* date, uint16_t* time, uint8_t* ms10) {
+  DateTime now = rtc.now();
+  *date = FS_DATE(now.year(), now.month(), now.day());
+  *time = FS_TIME(now.hour(), now.minute(), now.second());
+  *ms10 = now.second() & 1 ? 100 : 0;
+}
+
 bool hardwareBegin() {
   tft.begin();
   tft.fillScreen(TFT_BLACK);
@@ -78,6 +86,8 @@ bool hardwareBegin() {
   } else {
     Serial.println("ok!");
   }
+
+  FsDateTime::setCallback(dateTime);
 
   Serial.print("Trying SD card...");
 
