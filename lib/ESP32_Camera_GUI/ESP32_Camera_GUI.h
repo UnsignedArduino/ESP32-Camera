@@ -17,6 +17,7 @@ class ESP32CameraGUI {
 
     uint8_t menu(const char* title, const char** menu, uint8_t menuCount);
     bool fileExplorer(char* startDirectory, char* result, size_t resultSize);
+    bool changeRTCTime();
     void drawBottomToolbar(bool forceDraw = false);
     void setBottomText(char* text, uint32_t expireTime);
 

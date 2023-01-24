@@ -45,8 +45,9 @@ const uint8_t BATT_PIN = A0;
 ESP32CameraGUI gui;
 
 const char* optionsTitle = "Options";
-const uint8_t optionsCount = 2;
-const char* optionsMenu[optionsCount] = {"Cancel", "View files"};
+const uint8_t optionsCount = 4;
+const char* optionsMenu[optionsCount] = {"Cancel", "View files",
+                                         "Change camera settings", "Set clock"};
 
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
@@ -164,7 +165,14 @@ void loop() {
           const size_t MAX_PATH_SIZE = 255;
           char result[MAX_PATH_SIZE];
           if (gui.fileExplorer("/", result, MAX_PATH_SIZE)) {
-            exitOptionsMenu = true;
+          }
+          break;
+        }
+        case 3: {
+          if (gui.changeRTCTime()) {
+            gui.setBottomText("Set time successfully!", 3000);
+          } else {
+            gui.setBottomText("Canceled setting time!", 3000);
           }
           break;
         }
