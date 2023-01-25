@@ -226,6 +226,26 @@ void ArduCamera::setImageSize(uint8_t size) {
   this->camera->OV2640_set_JPEG_size(size);
 }
 
+void ArduCamera::setLightMode(uint8_t mode) {
+  this->camera->OV2640_set_Light_Mode(mode);
+}
+
+void ArduCamera::setSaturation(uint8_t mode) {
+  this->camera->OV2640_set_Color_Saturation(mode);
+}
+
+void ArduCamera::setBrightness(uint8_t brightness) {
+  this->camera->OV2640_set_Brightness(brightness);
+}
+
+void ArduCamera::setContrast(uint8_t contrast) {
+  this->camera->OV2640_set_Contrast(contrast);
+}
+
+void ArduCamera::setSpecialEffect(uint8_t effect) {
+  this->camera->OV2640_set_Special_effects(effect);
+}
+
 void ArduCamera::getNextFilename(char* dest, size_t destSize) {
   if (!this->sd->exists("/images/")) {
     this->sd->mkdir("/images/");

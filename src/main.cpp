@@ -46,8 +46,14 @@ ESP32CameraGUI gui;
 
 const char* optionsTitle = "Options";
 const uint8_t optionsCount = 4;
-const char* optionsMenu[optionsCount] = {"Cancel", "View files",
+const char* optionsMenu[optionsCount] = {"Exit", "View files",
                                          "Change camera settings", "Set clock"};
+
+const char* cameraSettingOptionsTitle = "Camera settings";
+const uint8_t cameraSettingOptionsCount = 6;
+const char* cameraSettingOptionsMenu[cameraSettingOptionsCount] = {
+  "Exit",           "Set light mode", "Set saturation",
+  "Set brightness", "Set contrast",   "Set special effect"};
 
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
@@ -165,6 +171,36 @@ void loop() {
           const size_t MAX_PATH_SIZE = 255;
           char result[MAX_PATH_SIZE];
           if (gui.fileExplorer("/", result, MAX_PATH_SIZE)) {
+          }
+          break;
+        }
+        case 2: {
+          bool exitCameraSettingOptionsMenu = false;
+          while (!exitCameraSettingOptionsMenu) {
+            switch (gui.menu(cameraSettingOptionsTitle,
+                             cameraSettingOptionsMenu,
+                             cameraSettingOptionsCount)) {
+              default:
+              case 0: {
+                exitCameraSettingOptionsMenu = true;
+                break;
+              }
+              case 1: {  // light mode
+                break;
+              }
+              case 2: {  // saturation
+                break;
+              }
+              case 3: {  // brightness
+                break;
+              }
+              case 4: {  // contrast
+                break;
+              }
+              case 5: {  // special effect
+                break;
+              }
+            }
           }
           break;
         }

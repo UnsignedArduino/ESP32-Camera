@@ -25,6 +25,11 @@ class ArduCamera {
     int32_t captureToDisk();
 
     void setImageSize(uint8_t size);
+    void setLightMode(uint8_t mode);
+    void setSaturation(uint8_t mode);
+    void setBrightness(uint8_t brightness);
+    void setContrast(uint8_t contrast);
+    void setSpecialEffect(uint8_t effect);
 
     void getNextFilename(char* dest, size_t destSize);
 
