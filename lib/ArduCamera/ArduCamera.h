@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <SdFat.h>
+#include <Preferences.h>
 #include <ArduCAM.h>
 
 const uint8_t HSPI_CLK = 13;
@@ -38,6 +39,10 @@ class ArduCamera {
     uint8_t getContrast();
     uint8_t getSpecialEffect();
 
+    void saveCameraSettings();
+    void loadCameraSettings();
+    void resetCameraSettings();
+
     void getNextFilename(char* dest, size_t destSize);
 
   protected:
@@ -54,5 +59,6 @@ class ArduCamera {
 
     SPIClass* hspi = NULL;
     ArduCAM* camera = NULL;
-    SdFs* sd;
+    SdFs* sd = NULL;
+    Preferences* prefs = NULL;
 };

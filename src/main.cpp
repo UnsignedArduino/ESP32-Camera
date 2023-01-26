@@ -50,10 +50,10 @@ const char* optionsMenu[optionsCount] = {"Exit", "View files",
                                          "Change camera settings", "Set clock"};
 
 const char* cameraSettingOptionsTitle = "Camera settings";
-const uint8_t cameraSettingOptionsCount = 6;
+const uint8_t cameraSettingOptionsCount = 7;
 const char* cameraSettingOptionsMenu[cameraSettingOptionsCount] = {
-  "Exit",           "Set light mode", "Set saturation",
-  "Set brightness", "Set contrast",   "Set special effect"};
+  "Exit",         "Set light mode",     "Set saturation", "Set brightness",
+  "Set contrast", "Set special effect", "Reset settings"};
 
 const char* cameraLightModeOptionsTitle = "Set light mode";
 const uint8_t cameraLightModeOptionsCount = 6;
@@ -153,6 +153,7 @@ bool hardwareBegin() {
     goto hardwareBeginError;
   }
   arduCamera.setImageSize(previewImageSize);
+  arduCamera.loadCameraSettings();
 
   upButton.begin();
   selectButton.begin();
@@ -388,8 +389,15 @@ void loop() {
                 }
                 break;
               }
+              case 6: {  // reset
+                arduCamera.resetCameraSettings();
+                gui.setBottomText("Reset all settings!", 3000);
+                exitCameraSettingOptionsMenu = true;
+                break;
+              }
             }
           }
+          arduCamera.saveCameraSettings();
           break;
         }
         case 3: {

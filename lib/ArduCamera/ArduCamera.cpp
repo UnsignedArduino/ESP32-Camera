@@ -32,6 +32,8 @@ bool ArduCamera::begin(SdFs* sd) {
 
   this->sd = sd;
 
+  this->prefs = new Preferences();
+
   Serial.println("Camera initialization...ok!");
 
   this->began = true;
@@ -263,6 +265,48 @@ uint8_t ArduCamera::getBrightness() { return this->brightness; }
 uint8_t ArduCamera::getContrast() { return this->contrast; }
 
 uint8_t ArduCamera::getSpecialEffect() { return this->specialEffect; }
+
+void ArduCamera::saveCameraSettings() {
+  Serial.println("Saving camera settings");
+  this->prefs->begin("cameraPrefs", false);
+  this->prefs->putUChar("lightMode", this->lightMode);
+  this->prefs->putUChar("saturation", this->saturation);
+  this->prefs->putUChar("brightness", this->brightness);
+  this->prefs->putUChar("contrast", this->contrast);
+  this->prefs->putUChar("specialEffect", this->specialEffect);
+  this->prefs->end();
+}
+
+void ArduCamera::loadCameraSettings() {
+  Serial.println("Loading camera settings");
+  this->prefs->begin("cameraPrefs", true);
+  const bool haveSettings = this->prefs->isKey("lightMode");
+  this->prefs->end();
+  if (haveSettings) {
+    Serial.println("Pre-existing camera settings available, loading");
+    this->prefs->begin("cameraPrefs", true);
+    this->setLightMode(this->prefs->getUChar("lightMode"));
+    this->setSaturation(this->prefs->getUChar("saturation"));
+    this->setBrightness(this->prefs->getUChar("brightness"));
+    this->setContrast(this->prefs->getUChar("contrast"));
+    this->setSpecialEffect(this->prefs->getUChar("specialEffect"));
+    this->prefs->end();
+  } else {
+    Serial.println("Could not find existing camear settings, using defaults!");
+    this->resetCameraSettings();
+  }
+  
+}
+
+void ArduCamera::resetCameraSettings() {
+  Serial.println("Setting default camera settings and saving!");
+  this->setLightMode(Auto);
+  this->setSaturation(Saturation0);
+  this->setBrightness(Brightness0);
+  this->setContrast(Contrast0);
+  this->setSpecialEffect(Normal);
+  this->saveCameraSettings();
+}
 
 void ArduCamera::getNextFilename(char* dest, size_t destSize) {
   if (!this->sd->exists("/images/")) {
