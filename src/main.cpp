@@ -55,6 +55,46 @@ const char* cameraSettingOptionsMenu[cameraSettingOptionsCount] = {
   "Exit",           "Set light mode", "Set saturation",
   "Set brightness", "Set contrast",   "Set special effect"};
 
+const char* cameraLightModeOptionsTitle = "Set light mode";
+const uint8_t cameraLightModeOptionsCount = 6;
+const char* cameraLightModeOptionsMenu[cameraLightModeOptionsCount] = {
+  "Exit", "Auto", "Sunny", "Cloudy", "Office", "Home"};
+const uint8_t cameraLightModeOptionsValues[cameraLightModeOptionsCount] = {
+  0xFF, Auto, Sunny, Cloudy, Office, Home};
+
+const char* cameraSaturationOptionsTitle = "Set saturation";
+const uint8_t cameraSaturationOptionsCount = 6;
+const char* cameraSaturationOptionsMenu[cameraSaturationOptionsCount] = {
+  "Exit",         "Saturation+2", "Saturation+1",
+  "Saturation+0", "Saturation-1", "Saturation-2"};
+const uint8_t cameraSaturationOptionsValues[cameraSaturationOptionsCount] = {
+  0xFF, Saturation2, Saturation1, Saturation0, Saturation_1, Saturation_2};
+
+const char* cameraBrightnessOptionsTitle = "Set brightness";
+const uint8_t cameraBrightnessOptionsCount = 6;
+const char* cameraBrightnessOptionsMenu[cameraBrightnessOptionsCount] = {
+  "Exit",         "Brightness+2", "Brightness+1",
+  "Brightness+0", "Brightness-1", "Brightness-2"};
+const uint8_t cameraBrightnessOptionsValues[cameraBrightnessOptionsCount] = {
+  0xFF, Brightness2, Brightness1, Brightness0, Brightness_1, Brightness_2};
+
+const char* cameraContrastOptionsTitle = "Set contrast";
+const uint8_t cameraContrastOptionsCount = 6;
+const char* cameraContrastOptionsMenu[cameraContrastOptionsCount] = {
+  "Exit", "Contrast+2", "Contrast+1", "Contrast+0", "Contrast-1", "Contrast-2"};
+const uint8_t cameraContrastOptionsValues[cameraContrastOptionsCount] = {
+  0xFF, Contrast2, Contrast1, Contrast0, Contrast_1, Contrast_2};
+
+const char* cameraSpecialEffectOptionsTitle = "Set special effect";
+const uint8_t cameraSpecialEffectOptionsCount = 9;
+const char* cameraSpecialEffectOptionsMenu[cameraSpecialEffectOptionsCount] = {
+  "Exit",    "Antique",    "Bluish",   "Greenish",
+  "Reddish", "Blue-white", "Negative", "Blue-white negative",
+  "Normal"};
+const uint8_t
+  cameraSpecialEffectOptionsValues[cameraSpecialEffectOptionsCount] = {
+    0xFF, Antique, Bluish, Greenish, Reddish, BW, Negative, BWnegative, Normal};
+
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
   tft.setSwapBytes(true);
@@ -186,6 +226,36 @@ void loop() {
                 break;
               }
               case 1: {  // light mode
+                bool exitCameraLightModeOptionsMenu = false;
+                uint8_t selected = 1;
+                for (uint8_t i = 0; i < cameraLightModeOptionsCount; i++) {
+                  if (cameraLightModeOptionsValues[i] ==
+                      arduCamera.getLightMode()) {
+                    selected = i;
+                    break;
+                  }
+                }
+                while (!exitCameraLightModeOptionsMenu) {
+                  const uint8_t result = gui.menu(
+                    cameraLightModeOptionsTitle, cameraLightModeOptionsMenu,
+                    cameraLightModeOptionsCount, selected);
+                  if (result > 0) {
+                    selected = result;
+                    arduCamera.setLightMode(
+                      cameraLightModeOptionsValues[selected]);
+                    const size_t bufSize = 32;
+                    char buf[bufSize];
+                    char buf2[bufSize];
+                    memset(buf, 0, bufSize);
+                    memset(buf2, 0, bufSize);
+                    strncpy(buf2, cameraLightModeOptionsMenu[result], bufSize);
+                    snprintf(buf, bufSize, "Set light mode to %s!",
+                             strlwr(buf2));
+                    gui.setBottomText(buf, 3000);
+                  } else {
+                    exitCameraLightModeOptionsMenu = true;
+                  }
+                }
                 break;
               }
               case 2: {  // saturation

@@ -15,14 +15,17 @@ class ESP32CameraGUI {
                Button* downButton, Button* selectButton, Button* shutterButton,
                uint8_t battPin);
 
-    uint8_t menu(const char* title, const char** menu, uint8_t menuCount);
-    bool fileExplorer(char* startDirectory, char* result, size_t resultSize);
+    uint8_t menu(const char* title, const char** menu, uint8_t menuCount,
+                 uint8_t startingSelected = 0xFF);
+    bool fileExplorer(const char* startDirectory, char* result,
+                      size_t resultSize);
     bool changeRTCTime();
     void drawBottomToolbar(bool forceDraw = false);
+    void setBottomText(const char* text, uint32_t expireTime);
     void setBottomText(char* text, uint32_t expireTime);
 
-    bool getFileCount(char* start, uint32_t& result);
-    bool getFileNameFromIndex(char* start, uint32_t index, char* result,
+    bool getFileCount(const char* start, uint32_t& result);
+    bool getFileNameFromIndex(const char* start, uint32_t index, char* result,
                               size_t resultSize);
 
     uint8_t getBattPercent();

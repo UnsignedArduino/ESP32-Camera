@@ -19,7 +19,7 @@ bool ESP32CameraGUI::begin(TFT_eSPI* tft, SdFs* sd, RTC_DS3231* rtc,
 
 // https://github.com/adafruit/Adafruit_Arcada/blob/master/Adafruit_Arcada_Alerts.cpp#L200
 uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
-                             uint8_t menuCount) {
+                             uint8_t menuCount, uint8_t startingSelected) {
   const uint8_t charWidth = 6;
   const uint8_t charHeight = 8;
   const uint16_t boxColor = TFT_WHITE;
@@ -45,8 +45,9 @@ uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
   uint32_t pressTime = 0;
   uint32_t lastMovedTime = millis();
   const bool showScrollbar = menuCount > maxEntryPerPage;
-  const uint8_t maxCharPerRow =
-    (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
+  const uint8_t maxCharPerRow = (boxWidth / charWidth) -
+                                (showScrollbar ? 1 : 0) -
+                                (startingSelected != 0xFF ? 2 : 0);
 
   const uint8_t fontX = boxX + charWidth / 2;
   uint8_t fontY = boxY + charHeight;
@@ -70,6 +71,9 @@ uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
 
   uint8_t offset = 0;
   uint8_t selected = 0;
+  if (startingSelected != 0xFF) {
+    selected = startingSelected;
+  }
 
   uint8_t offsetPauseTicks = startEndPauseTicks;
   uint8_t selectedCharOffset = 0;
@@ -85,7 +89,15 @@ uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
         this->tft->setTextColor(textColor, boxColor);
       }
       this->tft->setCursor(fontX, fontY + charHeight * (i - offset));
-      this->tft->print(" ");
+      if (startingSelected != 0xFF) {
+        if (i == startingSelected) {
+          this->tft->print(" > ");
+        } else {
+          this->tft->print("   ");
+        }
+      } else {
+        this->tft->print(" ");
+      }
       if (i == selected) {
         for (uint8_t j = 1;
              j < min((size_t)maxCharPerRow - 2, strlen(menu[i]) + 1); j++) {
@@ -193,7 +205,7 @@ uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
   }
 }
 
-bool ESP32CameraGUI::fileExplorer(char* startDirectory, char* result,
+bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
                                   size_t resultSize) {
   uint32_t fileCount;
 
@@ -815,6 +827,13 @@ void ESP32CameraGUI::drawBottomToolbar(bool forceDraw) {
       this->tft->print(buf);
     }
   }
+}
+
+void ESP32CameraGUI::setBottomText(const char* text, uint32_t expireTime) {
+  strncpy(this->customBottomText, text, ESP32CameraGUI::maxBottomTextSize);
+  this->needToRedrawBottom = true;
+  this->hasCustomBottomText = true;
+  this->customBottomTextExpire = millis() + expireTime;
 }
 
 void ESP32CameraGUI::setBottomText(char* text, uint32_t expireTime) {

@@ -31,12 +31,26 @@ class ArduCamera {
     void setContrast(uint8_t contrast);
     void setSpecialEffect(uint8_t effect);
 
+    uint8_t getImageSize();
+    uint8_t getLightMode();
+    uint8_t getSaturation();
+    uint8_t getBrightness();
+    uint8_t getContrast();
+    uint8_t getSpecialEffect();
+
     void getNextFilename(char* dest, size_t destSize);
 
   protected:
     bool began = false;
 
     uint32_t nextImageNumber = 0;
+
+    uint8_t imageSize;
+    uint8_t lightMode;
+    uint8_t saturation;
+    uint8_t brightness;
+    uint8_t contrast;
+    uint8_t specialEffect;
 
     SPIClass* hspi = NULL;
     ArduCAM* camera = NULL;

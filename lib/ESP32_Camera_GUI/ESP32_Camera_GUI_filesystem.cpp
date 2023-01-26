@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "ESP32_Camera_GUI.h"
 
-bool ESP32CameraGUI::getFileCount(char* start, uint32_t& result) {
+bool ESP32CameraGUI::getFileCount(const char* start, uint32_t& result) {
   FsFile dir = this->sd->open(start, O_RDONLY);
   if (!dir) {
     return false;
@@ -29,7 +29,7 @@ bool ESP32CameraGUI::getFileCount(char* start, uint32_t& result) {
   }
 }
 
-bool ESP32CameraGUI::getFileNameFromIndex(char* start, uint32_t index,
+bool ESP32CameraGUI::getFileNameFromIndex(const char* start, uint32_t index,
                                           char* result, size_t resultSize) {
   FsFile dir = this->sd->open(start, O_RDONLY);
   if (!dir) {

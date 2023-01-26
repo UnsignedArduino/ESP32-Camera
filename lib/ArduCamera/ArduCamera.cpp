@@ -21,12 +21,12 @@ bool ArduCamera::begin(SdFs* sd) {
 
   this->camera->set_format(JPEG);
   this->camera->InitCAM();
-  this->camera->OV2640_set_JPEG_size(OV2640_160x120);
-  this->camera->OV2640_set_Light_Mode(Auto);
-  this->camera->OV2640_set_Color_Saturation(Saturation0);
-  this->camera->OV2640_set_Brightness(Brightness0);
-  this->camera->OV2640_set_Contrast(Contrast0);
-  this->camera->OV2640_set_Special_effects(Normal);
+  this->setImageSize(OV2640_160x120);
+  this->setLightMode(Auto);
+  this->setSaturation(Saturation0);
+  this->setBrightness(Brightness0);
+  this->setContrast(Contrast0);
+  this->setSpecialEffect(Normal);
 
   this->camera->clear_fifo_flag();
 
@@ -224,27 +224,45 @@ diskIOError:
 
 void ArduCamera::setImageSize(uint8_t size) {
   this->camera->OV2640_set_JPEG_size(size);
+  this->imageSize = size;
 }
 
 void ArduCamera::setLightMode(uint8_t mode) {
   this->camera->OV2640_set_Light_Mode(mode);
+  this->lightMode = mode;
 }
 
 void ArduCamera::setSaturation(uint8_t mode) {
   this->camera->OV2640_set_Color_Saturation(mode);
+  this->saturation = mode;
 }
 
 void ArduCamera::setBrightness(uint8_t brightness) {
   this->camera->OV2640_set_Brightness(brightness);
+  this->brightness = brightness;
 }
 
 void ArduCamera::setContrast(uint8_t contrast) {
   this->camera->OV2640_set_Contrast(contrast);
+  this->contrast = contrast;
 }
 
 void ArduCamera::setSpecialEffect(uint8_t effect) {
   this->camera->OV2640_set_Special_effects(effect);
+  this->specialEffect = effect;
 }
+
+uint8_t ArduCamera::getImageSize() { return this->imageSize; }
+
+uint8_t ArduCamera::getLightMode() { return this->lightMode; }
+
+uint8_t ArduCamera::getSaturation() { return this->saturation; }
+
+uint8_t ArduCamera::getBrightness() { return this->brightness; }
+
+uint8_t ArduCamera::getContrast() { return this->contrast; }
+
+uint8_t ArduCamera::getSpecialEffect() { return this->specialEffect; }
 
 void ArduCamera::getNextFilename(char* dest, size_t destSize) {
   if (!this->sd->exists("/images/")) {
