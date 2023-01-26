@@ -65,23 +65,21 @@ const uint8_t cameraLightModeOptionsValues[cameraLightModeOptionsCount] = {
 const char* cameraSaturationOptionsTitle = "Set saturation";
 const uint8_t cameraSaturationOptionsCount = 6;
 const char* cameraSaturationOptionsMenu[cameraSaturationOptionsCount] = {
-  "Exit",         "Saturation+2", "Saturation+1",
-  "Saturation+0", "Saturation-1", "Saturation-2"};
+  "Exit", "+2", "+1", "+0", "-1", "-2"};
 const uint8_t cameraSaturationOptionsValues[cameraSaturationOptionsCount] = {
   0xFF, Saturation2, Saturation1, Saturation0, Saturation_1, Saturation_2};
 
 const char* cameraBrightnessOptionsTitle = "Set brightness";
 const uint8_t cameraBrightnessOptionsCount = 6;
 const char* cameraBrightnessOptionsMenu[cameraBrightnessOptionsCount] = {
-  "Exit",         "Brightness+2", "Brightness+1",
-  "Brightness+0", "Brightness-1", "Brightness-2"};
+  "Exit", "+2", "+1", "+0", "-1", "-2"};
 const uint8_t cameraBrightnessOptionsValues[cameraBrightnessOptionsCount] = {
   0xFF, Brightness2, Brightness1, Brightness0, Brightness_1, Brightness_2};
 
 const char* cameraContrastOptionsTitle = "Set contrast";
 const uint8_t cameraContrastOptionsCount = 6;
 const char* cameraContrastOptionsMenu[cameraContrastOptionsCount] = {
-  "Exit", "Contrast+2", "Contrast+1", "Contrast+0", "Contrast-1", "Contrast-2"};
+  "Exit", "+2", "+1", "+0", "-1", "-2"};
 const uint8_t cameraContrastOptionsValues[cameraContrastOptionsCount] = {
   0xFF, Contrast2, Contrast1, Contrast0, Contrast_1, Contrast_2};
 
@@ -89,7 +87,7 @@ const char* cameraSpecialEffectOptionsTitle = "Set special effect";
 const uint8_t cameraSpecialEffectOptionsCount = 9;
 const char* cameraSpecialEffectOptionsMenu[cameraSpecialEffectOptionsCount] = {
   "Exit",    "Antique",    "Bluish",   "Greenish",
-  "Reddish", "Blue-white", "Negative", "Blue-white negative",
+  "Reddish", "Monochrome", "Negative", "Negative monochrome",
   "Normal"};
 const uint8_t
   cameraSpecialEffectOptionsValues[cameraSpecialEffectOptionsCount] = {
@@ -259,15 +257,135 @@ void loop() {
                 break;
               }
               case 2: {  // saturation
+                bool exitCameraSaturationOptionsMenu = false;
+                uint8_t selected = 1;
+                for (uint8_t i = 0; i < cameraSaturationOptionsCount; i++) {
+                  if (cameraSaturationOptionsValues[i] ==
+                      arduCamera.getSaturation()) {
+                    selected = i;
+                    break;
+                  }
+                }
+                while (!exitCameraSaturationOptionsMenu) {
+                  const uint8_t result = gui.menu(
+                    cameraSaturationOptionsTitle, cameraSaturationOptionsMenu,
+                    cameraSaturationOptionsCount, selected);
+                  if (result > 0) {
+                    selected = result;
+                    arduCamera.setSaturation(
+                      cameraSaturationOptionsValues[selected]);
+                    const size_t bufSize = 32;
+                    char buf[bufSize];
+                    char buf2[bufSize];
+                    memset(buf, 0, bufSize);
+                    memset(buf2, 0, bufSize);
+                    strncpy(buf2, cameraSaturationOptionsMenu[result], bufSize);
+                    snprintf(buf, bufSize, "Set saturation to %s!",
+                             strlwr(buf2));
+                    gui.setBottomText(buf, 3000);
+                  } else {
+                    exitCameraSaturationOptionsMenu = true;
+                  }
+                }
                 break;
               }
               case 3: {  // brightness
+                bool exitCameraBrightnessOptionsMenu = false;
+                uint8_t selected = 1;
+                for (uint8_t i = 0; i < cameraBrightnessOptionsCount; i++) {
+                  if (cameraBrightnessOptionsValues[i] ==
+                      arduCamera.getBrightness()) {
+                    selected = i;
+                    break;
+                  }
+                }
+                while (!exitCameraBrightnessOptionsMenu) {
+                  const uint8_t result = gui.menu(
+                    cameraBrightnessOptionsTitle, cameraBrightnessOptionsMenu,
+                    cameraBrightnessOptionsCount, selected);
+                  if (result > 0) {
+                    selected = result;
+                    arduCamera.setBrightness(
+                      cameraBrightnessOptionsValues[selected]);
+                    const size_t bufSize = 32;
+                    char buf[bufSize];
+                    char buf2[bufSize];
+                    memset(buf, 0, bufSize);
+                    memset(buf2, 0, bufSize);
+                    strncpy(buf2, cameraBrightnessOptionsMenu[result], bufSize);
+                    snprintf(buf, bufSize, "Set brightness to %s!",
+                             strlwr(buf2));
+                    gui.setBottomText(buf, 3000);
+                  } else {
+                    exitCameraBrightnessOptionsMenu = true;
+                  }
+                }
                 break;
               }
               case 4: {  // contrast
+                bool exitCameraContrastOptionsMenu = false;
+                uint8_t selected = 1;
+                for (uint8_t i = 0; i < cameraContrastOptionsCount; i++) {
+                  if (cameraContrastOptionsValues[i] ==
+                      arduCamera.getContrast()) {
+                    selected = i;
+                    break;
+                  }
+                }
+                while (!exitCameraContrastOptionsMenu) {
+                  const uint8_t result = gui.menu(
+                    cameraContrastOptionsTitle, cameraContrastOptionsMenu,
+                    cameraContrastOptionsCount, selected);
+                  if (result > 0) {
+                    selected = result;
+                    arduCamera.setContrast(
+                      cameraContrastOptionsValues[selected]);
+                    const size_t bufSize = 32;
+                    char buf[bufSize];
+                    char buf2[bufSize];
+                    memset(buf, 0, bufSize);
+                    memset(buf2, 0, bufSize);
+                    strncpy(buf2, cameraSaturationOptionsMenu[result], bufSize);
+                    snprintf(buf, bufSize, "Set contrast to %s!", strlwr(buf2));
+                    gui.setBottomText(buf, 3000);
+                  } else {
+                    exitCameraContrastOptionsMenu = true;
+                  }
+                }
                 break;
               }
               case 5: {  // special effect
+                bool exitCameraSpecialEffectOptionsMenu = false;
+                uint8_t selected = 1;
+                for (uint8_t i = 0; i < cameraSpecialEffectOptionsCount; i++) {
+                  if (cameraSpecialEffectOptionsValues[i] ==
+                      arduCamera.getSpecialEffect()) {
+                    selected = i;
+                    break;
+                  }
+                }
+                while (!exitCameraSpecialEffectOptionsMenu) {
+                  const uint8_t result =
+                    gui.menu(cameraSpecialEffectOptionsTitle,
+                             cameraSpecialEffectOptionsMenu,
+                             cameraSpecialEffectOptionsCount, selected);
+                  if (result > 0) {
+                    selected = result;
+                    arduCamera.setSpecialEffect(
+                      cameraSpecialEffectOptionsValues[selected]);
+                    const size_t bufSize = 32;
+                    char buf[bufSize];
+                    char buf2[bufSize];
+                    memset(buf, 0, bufSize);
+                    memset(buf2, 0, bufSize);
+                    strncpy(buf2, cameraSpecialEffectOptionsMenu[result],
+                            bufSize);
+                    snprintf(buf, bufSize, "Set effect to %s!", strlwr(buf2));
+                    gui.setBottomText(buf, 3000);
+                  } else {
+                    exitCameraSpecialEffectOptionsMenu = true;
+                  }
+                }
                 break;
               }
             }
