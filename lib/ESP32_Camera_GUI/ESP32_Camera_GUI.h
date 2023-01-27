@@ -3,6 +3,11 @@
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <SdFat.h>
+
+// #define FILE FsFile
+typedef FsFile File;
+
+#include <JPEGDEC.h>
 #include <RTClib.h>
 #include <Button.h>
 
@@ -20,9 +25,11 @@ class ESP32CameraGUI {
     bool fileExplorer(const char* startDirectory, char* result,
                       size_t resultSize);
     bool changeRTCTime();
-    void drawBottomToolbar(bool forceDraw = false);
+    void imageViewer(JPEGDEC* decoder);
+
     void setBottomText(const char* text, uint32_t expireTime);
     void setBottomText(char* text, uint32_t expireTime);
+    void drawBottomToolbar(bool forceDraw = false);
 
     bool getFileCount(const char* start, uint32_t& result);
     bool getFileNameFromIndex(const char* start, uint32_t index, char* result,

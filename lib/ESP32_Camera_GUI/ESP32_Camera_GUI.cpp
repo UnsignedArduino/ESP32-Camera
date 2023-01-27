@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "ESP32_Camera_GUI.h"
-
 bool ESP32CameraGUI::begin(TFT_eSPI* tft, SdFs* sd, RTC_DS3231* rtc,
+
                            Button* upButton, Button* downButton,
                            Button* selectButton, Button* shutterButton,
                            uint8_t battPin) {
@@ -465,7 +465,7 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
               strncat(currentDirectory, "/", MAX_PATH_SIZE);
               strncat(currentDirectory, selectedPath, MAX_PATH_SIZE);
             }
-            Serial.printf("Selected %s", currentDirectory);
+            Serial.printf("Selected %s\n", currentDirectory);
             memset(result, 0, resultSize);
             strncpy(result, currentDirectory, resultSize);
             return true;

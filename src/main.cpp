@@ -93,10 +93,66 @@ const uint8_t
   cameraSpecialEffectOptionsValues[cameraSpecialEffectOptionsCount] = {
     0xFF, Antique, Bluish, Greenish, Reddish, BW, Negative, BWnegative, Normal};
 
+FsFile jpegFile;
+
+void* JPEGOpen(const char* filename, int32_t* size) {
+  Serial.printf("Opening JPEG file %s\n", filename);
+  jpegFile = sd.open(filename);
+  if (jpegFile) {
+    Serial.println("Opened JPEG file successfully!");
+  } else {
+    Serial.println("Failed to open JPEG file!");
+  }
+  *size = jpegFile.size();
+  Serial.printf("Size of file is %d\n", size);
+  return &jpegFile;
+}
+
+void JPEGClose(void* handle) {
+  if (jpegFile) {
+    Serial.println("Closing JPEG file");
+    jpegFile.close();
+  } else {
+    Serial.println("Failed to close file, maybe not open?");
+  }
+}
+
+int32_t JPEGRead(JPEGFILE* handle, uint8_t* buffer, int32_t length) {
+  if (!jpegFile) {
+    Serial.printf("Attempted reading %ld bytes to %p but file is not open!\n",
+                  length, buffer);
+    return 0;
+  } else {
+    Serial.printf("Reading %ld bytes to %p\n", length, buffer);
+    const int16_t read = jpegFile.read(buffer, length);
+    Serial.printf("Read %d bytes from file\n", read);
+    return read;
+  }
+}
+
+int32_t JPEGSeek(JPEGFILE* handle, int32_t position) {
+  if (!jpegFile) {
+    Serial.printf("Attempted seeking to %ld but file is not open!\n", position);
+    return 0;
+  } else {
+    Serial.printf("Seeking to %ld\n", position);
+    return jpegFile.seek(position);
+  }
+}
+
 int JPEGDraw(JPEGDRAW* pDraw) {
   tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
   tft.setSwapBytes(true);
   tft.pushPixels(pDraw->pPixels, pDraw->iWidth * pDraw->iHeight);
+  return 1;
+}
+
+int JPEGDrawContained(JPEGDRAW* pDraw) {
+  tft.startWrite();
+  tft.setAddrWindow(pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
+  tft.setSwapBytes(true);
+  tft.pushPixels(pDraw->pPixels, pDraw->iWidth * pDraw->iHeight);
+  tft.endWrite();
   return 1;
 }
 
@@ -210,6 +266,12 @@ void loop() {
           const size_t MAX_PATH_SIZE = 255;
           char result[MAX_PATH_SIZE];
           if (gui.fileExplorer("/", result, MAX_PATH_SIZE)) {
+            if (jpeg.open(result, JPEGOpen, JPEGClose, JPEGRead, JPEGSeek,
+                          JPEGDrawContained)) {
+              Serial.println(
+                "Decoded headers successfully, opening image viewer");
+              gui.imageViewer(&jpeg);
+            }
           }
           break;
         }
