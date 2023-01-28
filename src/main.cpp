@@ -96,21 +96,21 @@ const uint8_t
 FsFile jpegFile;
 
 void* JPEGOpen(const char* filename, int32_t* size) {
-  Serial.printf("Opening JPEG file %s\n", filename);
+  // Serial.printf("Opening JPEG file %s\n", filename);
   jpegFile = sd.open(filename);
   if (jpegFile) {
-    Serial.println("Opened JPEG file successfully!");
+    // Serial.println("Opened JPEG file successfully!");
   } else {
     Serial.println("Failed to open JPEG file!");
   }
   *size = jpegFile.size();
-  Serial.printf("Size of file is %d\n", size);
+  // Serial.printf("Size of file is %d\n", size);
   return &jpegFile;
 }
 
 void JPEGClose(void* handle) {
   if (jpegFile) {
-    Serial.println("Closing JPEG file");
+    // Serial.println("Closing JPEG file");
     jpegFile.close();
   } else {
     Serial.println("Failed to close file, maybe not open?");
@@ -123,9 +123,9 @@ int32_t JPEGRead(JPEGFILE* handle, uint8_t* buffer, int32_t length) {
                   length, buffer);
     return 0;
   } else {
-    Serial.printf("Reading %ld bytes to %p\n", length, buffer);
+    // Serial.printf("Reading %ld bytes to %p\n", length, buffer);
     const int16_t read = jpegFile.read(buffer, length);
-    Serial.printf("Read %d bytes from file\n", read);
+    // Serial.printf("Read %d bytes from file\n", read);
     return read;
   }
 }
@@ -135,7 +135,7 @@ int32_t JPEGSeek(JPEGFILE* handle, int32_t position) {
     Serial.printf("Attempted seeking to %ld but file is not open!\n", position);
     return 0;
   } else {
-    Serial.printf("Seeking to %ld\n", position);
+    // Serial.printf("Seeking to %ld\n", position);
     return jpegFile.seek(position);
   }
 }
@@ -265,12 +265,26 @@ void loop() {
         case 1: {
           const size_t MAX_PATH_SIZE = 255;
           char result[MAX_PATH_SIZE];
-          if (gui.fileExplorer("/", result, MAX_PATH_SIZE)) {
-            if (jpeg.open(result, JPEGOpen, JPEGClose, JPEGRead, JPEGSeek,
-                          JPEGDrawContained)) {
-              Serial.println(
-                "Decoded headers successfully, opening image viewer");
-              gui.imageViewer(&jpeg);
+          bool exitFileExplorer = false;
+          int32_t startingIndex = 0;
+          uint8_t startingOffset = 0;
+          char endingDirectory[MAX_PATH_SIZE];
+          memset(endingDirectory, 0, MAX_PATH_SIZE);
+          bool alreadyUseExplorer = false;
+          while (!exitFileExplorer) {
+            if (gui.fileExplorer(alreadyUseExplorer ? endingDirectory : "/",
+                                 result, MAX_PATH_SIZE, startingIndex,
+                                 startingOffset, endingDirectory, MAX_PATH_SIZE,
+                                 &startingIndex, &startingOffset)) {
+              if (jpeg.open(result, JPEGOpen, JPEGClose, JPEGRead, JPEGSeek,
+                            JPEGDrawContained)) {
+                Serial.println(
+                  "Decoded headers successfully, opening image viewer");
+                gui.imageViewer(&jpeg);
+                alreadyUseExplorer = true;
+              }
+            } else {
+              exitFileExplorer = true;
             }
           }
           break;

@@ -4,7 +4,7 @@
 #include <TFT_eSPI.h>
 #include <SdFat.h>
 
-// #define FILE FsFile
+// #define File FsFile
 typedef FsFile File;
 
 #include <JPEGDEC.h>
@@ -23,7 +23,11 @@ class ESP32CameraGUI {
     uint8_t menu(const char* title, const char** menu, uint8_t menuCount,
                  uint8_t startingSelected = 0xFF);
     bool fileExplorer(const char* startDirectory, char* result,
-                      size_t resultSize);
+                      size_t resultSize, int32_t startingFileIndex = 0,
+                      uint8_t startingOffset = 0, char* endingDirectory = NULL,
+                      int32_t endingDirectorySize = -1,
+                      int32_t* endingFileIndex = NULL,
+                      uint8_t* endingOffset = NULL);
     bool changeRTCTime();
     void imageViewer(JPEGDEC* decoder);
 
