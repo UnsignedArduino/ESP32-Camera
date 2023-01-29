@@ -267,7 +267,7 @@ void loop() {
           char result[MAX_PATH_SIZE];
           bool exitFileExplorer = false;
           int32_t startingIndex = 0;
-          uint8_t startingOffset = 0;
+          int32_t startingOffset = 0;
           char endingDirectory[MAX_PATH_SIZE];
           memset(endingDirectory, 0, MAX_PATH_SIZE);
           bool alreadyUseExplorer = false;

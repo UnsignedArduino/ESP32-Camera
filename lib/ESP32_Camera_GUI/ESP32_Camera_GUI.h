@@ -24,10 +24,10 @@ class ESP32CameraGUI {
                  uint8_t startingSelected = 0xFF);
     bool fileExplorer(const char* startDirectory, char* result,
                       size_t resultSize, int32_t startingFileIndex = 0,
-                      uint8_t startingOffset = 0, char* endingDirectory = NULL,
+                      int32_t startingOffset = 0, char* endingDirectory = NULL,
                       int32_t endingDirectorySize = -1,
                       int32_t* endingFileIndex = NULL,
-                      uint8_t* endingOffset = NULL);
+                      int32_t* endingOffset = NULL);
     bool changeRTCTime();
     void imageViewer(JPEGDEC* decoder);
 

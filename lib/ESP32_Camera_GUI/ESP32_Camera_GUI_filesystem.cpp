@@ -1,11 +1,12 @@
 #include <Arduino.h>
 #include "ESP32_Camera_GUI.h"
 
-bool ESP32CameraGUI::fileExplorer(
-  const char* startDirectory, char* result, size_t resultSize,
-  int32_t startingFileIndex, uint8_t startingOffset,
-  char* endingDirectory, int32_t endingDirectorySize,
-  int32_t* endingFileIndex, uint8_t* endingOffset) {
+bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
+                                  size_t resultSize, int32_t startingFileIndex,
+                                  int32_t startingOffset, char* endingDirectory,
+                                  int32_t endingDirectorySize,
+                                  int32_t* endingFileIndex,
+                                  int32_t* endingOffset) {
   const char* fileExplorerOptionsTitle = "File options";
   const uint8_t fileExplorerOptionsCount = 2;
   const char* fileExplorerOptions[fileExplorerOptionsCount] = {"Cancel",
@@ -46,8 +47,11 @@ bool ESP32CameraGUI::fileExplorer(
   const uint16_t holdToAccelTime = 500;
   const uint16_t moveThrottleTime = 50;
 
-  int16_t lastSelected = -1;
-  int16_t lastOffset = -1;
+  int32_t offset = startingOffset;
+  int32_t selected = startingFileIndex;
+
+  int32_t lastSelected = -1;
+  int32_t lastOffset = -1;
 
   const uint8_t extraOptionsCount = 2;
   const char* extraOptions[extraOptionsCount] = {"Exit", "Up a folder"};
@@ -98,21 +102,28 @@ bool ESP32CameraGUI::fileExplorer(
     const uint8_t scrollBarWidth = charWidth / 2;
     const uint8_t scrollBarHeight = maxEntryPerPage * charHeight;
 
-    uint8_t offset = startingOffset;
-    uint8_t selected = startingFileIndex;
-    if (lastOffset != -1) {
-      offset = lastOffset;
-      lastOffset = -1;
-    }
+    Serial.printf("Last selected index is %d, last offset is %d\n",
+                  lastSelected, lastOffset);
+    Serial.printf("Selected index is %d, offset is %d\n", selected, offset);
     if (lastSelected != -1) {
       selected = lastSelected;
       lastSelected = -1;
     }
+    if (lastOffset != -1) {
+      offset = lastOffset;
+      lastOffset = -1;
+    }
+    Serial.printf("Last selected index is %d, last offset is %d\n",
+                  lastSelected, lastOffset);
+    Serial.printf("Selected index is %d, offset is %d\n", selected, offset);
+    selected =
+      constrain(selected, 0, (int32_t)min(fileCount, (uint32_t)2147483647));
     if (selected >= offset + maxEntryPerPage) {
       offset += selected - (offset + maxEntryPerPage) + 1;
     } else if (selected < offset) {
       offset = selected;
     }
+    Serial.printf("Selected index is %d, offset is %d\n", selected, offset);
 
     uint8_t offsetPauseTicks = startEndPauseTicks;
     uint8_t selectedCharOffset = 0;
@@ -287,7 +298,7 @@ bool ESP32CameraGUI::fileExplorer(
             if (endingFileIndex != NULL) {
               *endingFileIndex = selected;
             }
-            if (endingOffset!=NULL){
+            if (endingOffset != NULL) {
               *endingOffset = offset;
             }
             Serial.printf("Current directory is %s\nSelected index is %lu\n",
@@ -340,10 +351,30 @@ bool ESP32CameraGUI::fileExplorer(
                     strncat(temp, selectedPath, MAX_PATH_SIZE - 1);
                   }
                   Serial.printf("Deleting file %s\n", temp);
-                  snprintf(tempNotif, tempNotifSize, "Deleted file %s",
-                           selectedPath);
+                  const bool result = this->sd->remove(temp);
+                  if (result) {
+                    snprintf(tempNotif, tempNotifSize, "Deleted file %s",
+                             selectedPath);
+                    Serial.printf("Deleted file %s\n", temp);
+                  } else {
+                    snprintf(tempNotif, tempNotifSize,
+                             "Failed to delete file %s", selectedPath);
+                    Serial.printf("Failed to delete file %s\n", temp);
+                  }
+                  Serial.printf("Selected index was %d, offset was %d\n",
+                                selected, offset);
+                  this->getFileCount(currentDirectory, fileCount);
+                  if (selected > fileExplorerOptionsCount || fileCount == 0) {
+                    selected--;
+                  }
+                  if (selected < offset) {
+                    offset = selected;
+                  }
+                  lastSelected = selected;
+                  lastOffset = offset;
+                  Serial.printf("Selected index is %d, offset is %d\n",
+                                selected, offset);
                   exitFileExplorerOptionsMenu = true;
-                  this->sd->remove(temp);
                 } else {
                   Serial.printf("Canceled deleting file\n");
                   snprintf(tempNotif, tempNotifSize, "Canceled file deletion.",
@@ -429,6 +460,9 @@ bool ESP32CameraGUI::getFileCount(const char* start, uint32_t& result) {
     }
     file.close();
   }
+
+  Serial.printf("File count in %s is %lu\n", start, result);
+
   if (dir.getError()) {
     return false;
   } else {
