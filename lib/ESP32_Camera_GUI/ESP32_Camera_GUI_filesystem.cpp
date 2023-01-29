@@ -349,10 +349,10 @@ bool ESP32CameraGUI::fileExplorer(
                   snprintf(tempNotif, tempNotifSize, "Canceled file deletion.",
                            selectedPath);
                 }
+                this->setBottomText(tempNotif, 3000);
                 break;
               }
             }
-            this->setBottomText(tempNotif, 3000);
           }
           needToCompleteRedraw = true;
           break;
