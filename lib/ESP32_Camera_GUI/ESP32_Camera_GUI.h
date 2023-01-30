@@ -20,6 +20,10 @@ class ESP32CameraGUI {
                Button* downButton, Button* selectButton, Button* shutterButton,
                uint8_t battPin);
 
+    void dialog(const char* title, const char* text);
+    void dialog(const char* title, char* text) {
+      this->dialog(title, (const char*)text);
+    }
     uint8_t menu(const char* title, const char** menu, uint8_t menuCount,
                  uint8_t startingSelected = 0xFF);
     bool fileExplorer(const char* startDirectory, char* result,
@@ -32,7 +36,9 @@ class ESP32CameraGUI {
     void imageViewer(JPEGDEC* decoder);
 
     void setBottomText(const char* text, uint32_t expireTime);
-    void setBottomText(char* text, uint32_t expireTime);
+    void setBottomText(char* text, uint32_t expireTime) {
+      this->setBottomText((const char*)text, expireTime);
+    }
     void drawBottomToolbar(bool forceDraw = false);
 
     bool getFileCount(const char* start, uint32_t& result);

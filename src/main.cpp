@@ -164,11 +164,15 @@ void dateTime(uint16_t* date, uint16_t* time, uint8_t* ms10) {
   *ms10 = now.second() & 1 ? 100 : 0;
 }
 
-const uint8_t HARDWARE_BEGIN_OK = 0b00000000;
-const uint8_t HARDWARE_BEGIN_RTC_RESET = 0b00000001;
-const uint8_t HARDWARE_BEGIN_FAIL = 0b10000000;
+const uint16_t HARDWARE_BEGIN_OK = 0b0000000000000000;
+const uint16_t HARDWARE_BEGIN_RTC_FAIL = 0b0000000000000001;
+const uint16_t HARDWARE_BEGIN_RTC_RESET = 0b0000000000000010;
+const uint16_t HARDWARE_BEGIN_SD_FAIL = 0b0000000000000100;
+const uint16_t HARDWARE_BEGIN_CAMERA_FAIL = 0b0000000000001000;
+const uint16_t HARDWARE_BEGIN_GUI_FAIL = 0b0000000000010000;
+const uint16_t HARDWARE_BEGIN_FAIL = 0b111111111111101;
 
-uint8_t hardwareBegin() {
+uint16_t hardwareBegin() {
   uint8_t returnCode = HARDWARE_BEGIN_OK;
 
   tft.begin();
@@ -181,7 +185,7 @@ uint8_t hardwareBegin() {
   if (!rtc.begin()) {
     Serial.println("error!");
     Serial.println("Hardware initialization...error!");
-    returnCode |= HARDWARE_BEGIN_FAIL;
+    returnCode |= HARDWARE_BEGIN_RTC_FAIL;
   } else {
     Serial.println("ok!");
   }
@@ -209,14 +213,14 @@ uint8_t hardwareBegin() {
       Serial.println(sd.sdErrorData());
     }
     Serial.println("Hardware initialization...error!");
-    returnCode |= HARDWARE_BEGIN_FAIL;
+    returnCode |= HARDWARE_BEGIN_SD_FAIL;
   } else {
     Serial.println("ok!");
   }
 
   if (!arduCamera.begin(&sd)) {
     Serial.println("Hardware initialization...error!");
-    returnCode |= HARDWARE_BEGIN_FAIL;
+    returnCode |= HARDWARE_BEGIN_CAMERA_FAIL;
   }
   arduCamera.setImageSize(previewImageSize);
   arduCamera.loadCameraSettings();
@@ -226,10 +230,11 @@ uint8_t hardwareBegin() {
   downButton.begin();
   shutterButton.begin();
 
-  gui.begin(&tft, &sd, &rtc, &upButton, &downButton, &selectButton,
-            &shutterButton, BATT_PIN);
+  if (!gui.begin(&tft, &sd, &rtc, &upButton, &downButton, &selectButton,
+                 &shutterButton, BATT_PIN)) {
+    returnCode |= HARDWARE_BEGIN_GUI_FAIL;
+  }
 
-  Serial.println("Hardware initialization...ok!");
   Serial.print("Hardware initialization returned 0b");
   Serial.println(returnCode, BIN);
 
@@ -242,8 +247,20 @@ void setup() {
 
   const uint8_t hardwareBeginStatus = hardwareBegin();
 
-  if (hardwareBeginStatus & HARDWARE_BEGIN_FAIL) {
-    gui.dialog("Hardware error", "Failed to initialize\nhardware!");
+  if ((hardwareBeginStatus & HARDWARE_BEGIN_FAIL) > 0) {
+    const size_t msgSize = 128;
+    char msg[msgSize];
+    memset(msg, 0, msgSize);
+    if ((hardwareBeginStatus & HARDWARE_BEGIN_SD_FAIL) > 0) {
+      snprintf(msg, msgSize,
+               "No micro SD card\ndetected! Make sure\nyou have a micro "
+               "SD\ncard formatted with\nFAT32 or exFAT.",
+               hardwareBeginStatus);
+    } else {
+      snprintf(msg, msgSize, "Failed to initialize\nhardware!\n\nError: 0x%X",
+               hardwareBeginStatus);
+    }
+    gui.dialog("Hardware error", msg);
     while (true) {
       ;
     }

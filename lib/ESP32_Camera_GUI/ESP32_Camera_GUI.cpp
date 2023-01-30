@@ -17,6 +17,58 @@ bool ESP32CameraGUI::begin(TFT_eSPI* tft, SdFs* sd, RTC_DS3231* rtc,
   return true;
 }
 
+void ESP32CameraGUI::dialog(const char* title, const char* text) {
+  const uint8_t charWidth = 6;
+  const uint8_t charHeight = 8;
+  const uint16_t boxColor = TFT_WHITE;
+  const uint16_t textColor = TFT_BLACK;
+  const uint8_t topPadding = 8;
+  const uint8_t rightPadding = 8;
+  const uint8_t bottomPadding = 16;
+  const uint8_t leftPadding = 8;
+
+  const uint16_t boxWidth = this->tft->width() - leftPadding - rightPadding;
+  const uint16_t boxHeight = this->tft->height() - topPadding - bottomPadding;
+  const uint16_t boxX = leftPadding;
+  const uint16_t boxY = topPadding;
+
+  const uint8_t fontX = boxX + charWidth / 2;
+  uint8_t fontY = boxY + charHeight;
+
+  this->tft->fillRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth + 1,
+                           boxColor);
+  this->tft->drawRoundRect(boxX, boxY, boxWidth, boxHeight, charWidth - 1,
+                           textColor);
+
+  this->tft->setTextColor(textColor, boxColor);
+  this->tft->setCursor(fontX, fontY);
+  this->tft->print(" ");
+  this->tft->print(title);
+
+  fontY += charHeight * 0.5;
+
+  bool newLineStarted = true;
+  for (uint16_t i = 0; i < strlen(text); i++) {
+    if (newLineStarted) {
+      newLineStarted = false;
+      fontY += charHeight;
+      this->tft->setCursor(fontX, fontY);
+      this->tft->print(" ");
+    }
+    const char c = text[i];
+    if (c == '\n') {
+      newLineStarted = true;
+    } else {
+      this->tft->print(c);
+    }
+  }
+
+  while (!this->selectButton->pressed()) {
+    this->drawBottomToolbar();
+    delay(10);
+  }
+}
+
 // https://github.com/adafruit/Adafruit_Arcada/blob/master/Adafruit_Arcada_Alerts.cpp#L200
 uint8_t ESP32CameraGUI::menu(const char* title, const char** menu,
                              uint8_t menuCount, uint8_t startingSelected) {
@@ -512,13 +564,6 @@ void ESP32CameraGUI::drawBottomToolbar(bool forceDraw) {
 }
 
 void ESP32CameraGUI::setBottomText(const char* text, uint32_t expireTime) {
-  strncpy(this->customBottomText, text, ESP32CameraGUI::maxBottomTextSize);
-  this->needToRedrawBottom = true;
-  this->hasCustomBottomText = true;
-  this->customBottomTextExpire = millis() + expireTime;
-}
-
-void ESP32CameraGUI::setBottomText(char* text, uint32_t expireTime) {
   strncpy(this->customBottomText, text, ESP32CameraGUI::maxBottomTextSize);
   this->needToRedrawBottom = true;
   this->hasCustomBottomText = true;
