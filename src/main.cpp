@@ -164,7 +164,13 @@ void dateTime(uint16_t* date, uint16_t* time, uint8_t* ms10) {
   *ms10 = now.second() & 1 ? 100 : 0;
 }
 
-bool hardwareBegin() {
+const uint8_t HARDWARE_BEGIN_OK = 0b00000000;
+const uint8_t HARDWARE_BEGIN_RTC_RESET = 0b00000001;
+const uint8_t HARDWARE_BEGIN_FAIL = 0b10000000;
+
+uint8_t hardwareBegin() {
+  uint8_t returnCode = HARDWARE_BEGIN_OK;
+
   tft.begin();
   tft.fillScreen(TFT_BLACK);
   tft.setRotation(1);
@@ -174,7 +180,8 @@ bool hardwareBegin() {
   Serial.print("Trying RTC...");
   if (!rtc.begin()) {
     Serial.println("error!");
-    goto hardwareBeginError;
+    Serial.println("Hardware initialization...error!");
+    returnCode |= HARDWARE_BEGIN_FAIL;
   } else {
     Serial.println("ok!");
   }
@@ -184,6 +191,7 @@ bool hardwareBegin() {
     Serial.println("error!");
     Serial.println("RTC lost power, setting to compile time");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    returnCode |= HARDWARE_BEGIN_RTC_RESET;
   } else {
     Serial.println("ok!");
   }
@@ -200,13 +208,15 @@ bool hardwareBegin() {
       Serial.print("\nSD error data: ");
       Serial.println(sd.sdErrorData());
     }
-    goto hardwareBeginError;
+    Serial.println("Hardware initialization...error!");
+    returnCode |= HARDWARE_BEGIN_FAIL;
   } else {
     Serial.println("ok!");
   }
 
   if (!arduCamera.begin(&sd)) {
-    goto hardwareBeginError;
+    Serial.println("Hardware initialization...error!");
+    returnCode |= HARDWARE_BEGIN_FAIL;
   }
   arduCamera.setImageSize(previewImageSize);
   arduCamera.loadCameraSettings();
@@ -220,23 +230,26 @@ bool hardwareBegin() {
             &shutterButton, BATT_PIN);
 
   Serial.println("Hardware initialization...ok!");
+  Serial.print("Hardware initialization returned 0b");
+  Serial.println(returnCode, BIN);
 
-  return true;
-
-hardwareBeginError:
-
-  Serial.println("Hardware initialization...error!");
-  return false;
+  return returnCode;
 }
 
 void setup() {
   Serial.begin(9600);
   Serial.println("\n\nESP32 camera");
 
-  if (!hardwareBegin()) {
+  const uint8_t hardwareBeginStatus = hardwareBegin();
+
+  if (hardwareBeginStatus & HARDWARE_BEGIN_FAIL) {
+    gui.dialog("Hardware error", "Failed to initialize\nhardware!");
     while (true) {
       ;
     }
+  }
+  if (hardwareBeginStatus & HARDWARE_BEGIN_RTC_RESET) {
+    gui.setBottomText("Clock lost power!", 3000);
   }
 }
 
