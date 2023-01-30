@@ -2,8 +2,7 @@
 #include "ESP32_Camera_GUI.h"
 
 uint8_t ESP32CameraGUI::getBattPercent() {
-  const uint16_t milliVolts = map(analogRead(this->battPin), 0, 4096, 0, 3300);
-  const uint16_t battVolt = milliVolts * 2;
+  const uint16_t battVolt = analogReadMilliVolts(this->battPin) * 2;
 
   // https://blog.ampow.com/lipo-voltage-chart/
   if (battVolt > 4200) {
