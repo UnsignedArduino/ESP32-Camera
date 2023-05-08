@@ -11,6 +11,8 @@
 #include <ArduCamera.h>
 #include <Button.h>
 
+// #define DEBUG_FPS
+
 ArduCamera arduCamera;
 
 const uint8_t previewImageSize = OV2640_160x120;
@@ -271,17 +273,40 @@ void setup() {
 }
 
 void loop() {
+  const uint32_t startCaptureTime = millis();
+
   memset(previewBuf, 0, PREVIEW_BUF_SIZE);
   const size_t previewSize =
     arduCamera.captureToMemory(previewBuf, PREVIEW_BUF_SIZE);
+
+  const uint32_t elapsedCaptureTime = millis() - startCaptureTime;
+
+  const uint32_t startRenderTime = millis();
   if (previewSize > 0) {
+
     if (jpeg.openRAM(previewBuf, previewSize, JPEGDraw)) {
       tft.startWrite();
-      jpeg.decode(0, 0, 0);
+      if (!jpeg.decode(0, 0, 0)) {
+        gui.setBottomText("Error showing preview!", 3000);
+      }
       tft.endWrite();
       jpeg.close();
+    } else {
+      gui.setBottomText("Error showing preview!", 3000);
     }
   }
+  const uint32_t elapsedRenderTime = millis() - startRenderTime;
+
+  #ifdef DEBUG_FPS
+  tft.setCursor(0, 0);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.print("C: ");
+  tft.print(elapsedCaptureTime); 
+  tft.println(" ms");
+  tft.print("R: ");
+  tft.print(elapsedRenderTime);
+  tft.print(" ms");
+  #endif
 
   if (selectButton.pressed()) {
     bool exitOptionsMenu = false;
