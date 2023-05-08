@@ -174,8 +174,13 @@ const uint16_t HARDWARE_BEGIN_CAMERA_FAIL = 0b0000000000001000;
 const uint16_t HARDWARE_BEGIN_GUI_FAIL = 0b0000000000010000;
 const uint16_t HARDWARE_BEGIN_FAIL = 0b111111111111101;
 
+#define STATUS_HIGH() digitalWrite(LED_BUILTIN, HIGH)
+#define STATUS_LOW() digitalWrite(LED_BUILTIN, LOW)
+
 uint16_t hardwareBegin() {
   uint8_t returnCode = HARDWARE_BEGIN_OK;
+
+  STATUS_HIGH();
 
   tft.begin();
   tft.fillScreen(TFT_BLACK);
@@ -240,10 +245,17 @@ uint16_t hardwareBegin() {
   Serial.print("Hardware initialization returned 0b");
   Serial.println(returnCode, BIN);
 
+  STATUS_LOW();
+
   return returnCode;
 }
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  STATUS_LOW();
+
+  delay(100);
+
   Serial.begin(9600);
   Serial.println("\n\nESP32 camera");
 
@@ -263,6 +275,7 @@ void setup() {
                hardwareBeginStatus);
     }
     gui.dialog("Hardware error", msg);
+    STATUS_HIGH();
     while (true) {
       ;
     }
@@ -545,9 +558,16 @@ void loop() {
     gui.setBottomText("Taking photo...", UNLIMITED_BOTTOM_TEXT_TIME);
     gui.drawBottomToolbar();
     arduCamera.setImageSize(captureImageSize);
-    delay(1000);
+    for (uint8_t i = 0; i < 3; i ++) {
+      STATUS_HIGH();
+      delay(1000/6);
+      STATUS_LOW();
+      delay(1000/6);
+    }
+    STATUS_HIGH();
     const size_t result = arduCamera.captureToDisk();
     arduCamera.setImageSize(previewImageSize);
+    STATUS_LOW();
     delay(1000);
     if (result > 0) {
       gui.setBottomText("Photo saved!", 3000);
