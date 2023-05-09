@@ -23,7 +23,7 @@ class ArduCamera {
     bool isConnected();
 
     size_t captureToMemory(uint8_t* dest, size_t destSize);
-    int32_t captureToDisk();
+    int32_t captureToDisk(char* dest, size_t destSize);
 
     void setImageSize(uint8_t size);
     void setLightMode(uint8_t mode);

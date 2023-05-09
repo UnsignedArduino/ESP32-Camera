@@ -33,7 +33,7 @@ class ESP32CameraGUI {
                       int32_t* endingFileIndex = NULL,
                       int32_t* endingOffset = NULL);
     bool changeRTCTime();
-    void imageViewer(JPEGDEC* decoder);
+    void imageViewer(const char* path, JPEGDEC* decoder);
 
     void setBottomText(const char* text, uint32_t expireTime);
     void setBottomText(char* text, uint32_t expireTime) {

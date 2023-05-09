@@ -348,7 +348,7 @@ void loop() {
                             JPEGDrawContained)) {
                 Serial.println(
                   "Decoded headers successfully, opening image viewer");
-                gui.imageViewer(&jpeg);
+                gui.imageViewer(result, &jpeg);
                 alreadyUseExplorer = true;
               }
             } else {
@@ -565,10 +565,23 @@ void loop() {
       delay(1000/6);
     }
     STATUS_HIGH();
-    const size_t result = arduCamera.captureToDisk();
+    const size_t MAX_PATH_SIZE = 255;
+    char filename[MAX_PATH_SIZE];
+    memset(filename, 0, MAX_PATH_SIZE);
+    const size_t result = arduCamera.captureToDisk(filename, MAX_PATH_SIZE);
     arduCamera.setImageSize(previewImageSize);
     STATUS_LOW();
     delay(1000);
+    if (selectButton.pressed()) {
+      if (jpeg.open(filename, JPEGOpen, JPEGClose, JPEGRead, JPEGSeek,
+                            JPEGDrawContained)) {
+        Serial.println(
+          "Decoded headers successfully, opening image viewer");
+        gui.imageViewer(filename, &jpeg);
+      } else {
+        gui.setBottomText("Error opening photo!", 3000);
+      }
+    }
     if (result > 0) {
       gui.setBottomText("Photo saved!", 3000);
     } else if (result == CAMERA_ERROR) {

@@ -134,7 +134,7 @@ size_t ArduCamera::captureToMemory(uint8_t* dest, size_t destSize) {
   return i;
 }
 
-int32_t ArduCamera::captureToDisk() {
+int32_t ArduCamera::captureToDisk(char* dest, size_t destSize) {
   const size_t MAX_PATH_SIZE = 255;
   char filename[MAX_PATH_SIZE];
   memset(filename, 0, MAX_PATH_SIZE);
@@ -175,6 +175,8 @@ int32_t ArduCamera::captureToDisk() {
   } else {
     Serial.println("Open file success");
   }
+
+  strncpy(dest, filename, destSize);
 
   this->camera->CS_LOW();
   this->camera->set_fifo_burst();

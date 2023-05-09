@@ -117,7 +117,7 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
                   lastSelected, lastOffset);
     Serial.printf("Selected index is %d, offset is %d\n", selected, offset);
     selected =
-      constrain(selected, 0, (int32_t)min(fileCount, (uint32_t)2147483647));
+      constrain(selected, 0, (int32_t)min(fileCount, (uint32_t)0x7FFFFFFF));
     if (selected >= offset + maxEntryPerPage) {
       offset += selected - (offset + maxEntryPerPage) + 1;
     } else if (selected < offset) {
