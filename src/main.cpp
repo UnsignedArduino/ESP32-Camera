@@ -1,15 +1,15 @@
+#include <ArduCAM.h>
+#include <ArduCamera.h>
 #include <Arduino.h>
+#include <Button.h>
+#include <ESP32_Camera_GUI.h>
+#include <JPEGDEC.h>
 #include <RTClib.h>
-#include <SPI.h>  // Needed by TFT_eSPI
+#include <SD.h>  // Needed by JPEGDEC because it needs "File"
+#include <SPI.h> // Needed by TFT_eSPI
 #include <SdFat.h>
 #include <TFT_eSPI.h>
-#include <ESP32_Camera_GUI.h>
-#include <ArduCAM.h>
-#include <memorysaver.h>  // Needed by ArduCAM
-#include <SD.h>           // Needed by JPEGDEC because it needs "File"
-#include <JPEGDEC.h>
-#include <ArduCamera.h>
-#include <Button.h>
+#include <memorysaver.h> // Needed by ArduCAM
 
 // #define DEBUG_FPS
 
@@ -54,46 +54,47 @@ const char* optionsMenu[optionsCount] = {"Exit", "View files",
 const char* cameraSettingOptionsTitle = "Camera settings";
 const uint8_t cameraSettingOptionsCount = 7;
 const char* cameraSettingOptionsMenu[cameraSettingOptionsCount] = {
-  "Exit",         "Set light mode",     "Set saturation", "Set brightness",
-  "Set contrast", "Set special effect", "Reset settings"};
+    "Exit",         "Set light mode",     "Set saturation", "Set brightness",
+    "Set contrast", "Set special effect", "Reset settings"};
 
 const char* cameraLightModeOptionsTitle = "Set light mode";
 const uint8_t cameraLightModeOptionsCount = 6;
 const char* cameraLightModeOptionsMenu[cameraLightModeOptionsCount] = {
-  "Exit", "Auto", "Sunny", "Cloudy", "Office", "Home"};
+    "Exit", "Auto", "Sunny", "Cloudy", "Office", "Home"};
 const uint8_t cameraLightModeOptionsValues[cameraLightModeOptionsCount] = {
-  0xFF, Auto, Sunny, Cloudy, Office, Home};
+    0xFF, Auto, Sunny, Cloudy, Office, Home};
 
 const char* cameraSaturationOptionsTitle = "Set saturation";
 const uint8_t cameraSaturationOptionsCount = 6;
 const char* cameraSaturationOptionsMenu[cameraSaturationOptionsCount] = {
-  "Exit", "+2", "+1", "+0", "-1", "-2"};
+    "Exit", "+2", "+1", "+0", "-1", "-2"};
 const uint8_t cameraSaturationOptionsValues[cameraSaturationOptionsCount] = {
-  0xFF, Saturation2, Saturation1, Saturation0, Saturation_1, Saturation_2};
+    0xFF, Saturation2, Saturation1, Saturation0, Saturation_1, Saturation_2};
 
 const char* cameraBrightnessOptionsTitle = "Set brightness";
 const uint8_t cameraBrightnessOptionsCount = 6;
 const char* cameraBrightnessOptionsMenu[cameraBrightnessOptionsCount] = {
-  "Exit", "+2", "+1", "+0", "-1", "-2"};
+    "Exit", "+2", "+1", "+0", "-1", "-2"};
 const uint8_t cameraBrightnessOptionsValues[cameraBrightnessOptionsCount] = {
-  0xFF, Brightness2, Brightness1, Brightness0, Brightness_1, Brightness_2};
+    0xFF, Brightness2, Brightness1, Brightness0, Brightness_1, Brightness_2};
 
 const char* cameraContrastOptionsTitle = "Set contrast";
 const uint8_t cameraContrastOptionsCount = 6;
 const char* cameraContrastOptionsMenu[cameraContrastOptionsCount] = {
-  "Exit", "+2", "+1", "+0", "-1", "-2"};
+    "Exit", "+2", "+1", "+0", "-1", "-2"};
 const uint8_t cameraContrastOptionsValues[cameraContrastOptionsCount] = {
-  0xFF, Contrast2, Contrast1, Contrast0, Contrast_1, Contrast_2};
+    0xFF, Contrast2, Contrast1, Contrast0, Contrast_1, Contrast_2};
 
 const char* cameraSpecialEffectOptionsTitle = "Set special effect";
 const uint8_t cameraSpecialEffectOptionsCount = 9;
 const char* cameraSpecialEffectOptionsMenu[cameraSpecialEffectOptionsCount] = {
-  "Exit",    "Antique",    "Bluish",   "Greenish",
-  "Reddish", "Monochrome", "Negative", "Negative monochrome",
-  "Normal"};
+    "Exit",    "Antique",    "Bluish",   "Greenish",
+    "Reddish", "Monochrome", "Negative", "Negative monochrome",
+    "Normal"};
 const uint8_t
-  cameraSpecialEffectOptionsValues[cameraSpecialEffectOptionsCount] = {
-    0xFF, Antique, Bluish, Greenish, Reddish, BW, Negative, BWnegative, Normal};
+    cameraSpecialEffectOptionsValues[cameraSpecialEffectOptionsCount] = {
+        0xFF, Antique,  Bluish,     Greenish, Reddish,
+        BW,   Negative, BWnegative, Normal};
 
 FsFile jpegFile;
 
@@ -250,6 +251,36 @@ uint16_t hardwareBegin() {
   return returnCode;
 }
 
+void fileExplorerAndApps(const char* preselectPath = NULL) {
+  const size_t MAX_PATH_SIZE = 255;
+  char result[MAX_PATH_SIZE];
+  bool exitFileExplorer = false;
+  int32_t startingIndex = 0;
+  int32_t startingOffset = 0;
+  char endingDirectory[MAX_PATH_SIZE];
+  memset(endingDirectory, 0, MAX_PATH_SIZE);
+  if (preselectPath != NULL) {
+    Serial.print("Preselecting: ");
+    Serial.println(preselectPath);
+  }
+  bool alreadyUseExplorer = false;
+  while (!exitFileExplorer) {
+    if (gui.fileExplorer(alreadyUseExplorer ? endingDirectory : "/", result,
+                         MAX_PATH_SIZE, startingIndex, startingOffset,
+                         endingDirectory, MAX_PATH_SIZE, &startingIndex,
+                         &startingOffset)) {
+      if (jpeg.open(result, JPEGOpen, JPEGClose, JPEGRead, JPEGSeek,
+                    JPEGDrawContained)) {
+        Serial.println("Decoded headers successfully, opening image viewer");
+        gui.imageViewer(result, &jpeg);
+        alreadyUseExplorer = true;
+      }
+    } else {
+      exitFileExplorer = true;
+    }
+  }
+}
+
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   STATUS_LOW();
@@ -290,7 +321,7 @@ void loop() {
 
   memset(previewBuf, 0, PREVIEW_BUF_SIZE);
   const size_t previewSize =
-    arduCamera.captureToMemory(previewBuf, PREVIEW_BUF_SIZE);
+      arduCamera.captureToMemory(previewBuf, PREVIEW_BUF_SIZE);
 
   const uint32_t elapsedCaptureTime = millis() - startCaptureTime;
 
@@ -310,16 +341,16 @@ void loop() {
   }
   const uint32_t elapsedRenderTime = millis() - startRenderTime;
 
-  #ifdef DEBUG_FPS
+#ifdef DEBUG_FPS
   tft.setCursor(0, 0);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.print("C: ");
-  tft.print(elapsedCaptureTime); 
+  tft.print(elapsedCaptureTime);
   tft.println(" ms");
   tft.print("R: ");
   tft.print(elapsedRenderTime);
   tft.print(" ms");
-  #endif
+#endif
 
   if (selectButton.pressed()) {
     bool exitOptionsMenu = false;
@@ -331,30 +362,7 @@ void loop() {
           break;
         }
         case 1: {
-          const size_t MAX_PATH_SIZE = 255;
-          char result[MAX_PATH_SIZE];
-          bool exitFileExplorer = false;
-          int32_t startingIndex = 0;
-          int32_t startingOffset = 0;
-          char endingDirectory[MAX_PATH_SIZE];
-          memset(endingDirectory, 0, MAX_PATH_SIZE);
-          bool alreadyUseExplorer = false;
-          while (!exitFileExplorer) {
-            if (gui.fileExplorer(alreadyUseExplorer ? endingDirectory : "/",
-                                 result, MAX_PATH_SIZE, startingIndex,
-                                 startingOffset, endingDirectory, MAX_PATH_SIZE,
-                                 &startingIndex, &startingOffset)) {
-              if (jpeg.open(result, JPEGOpen, JPEGClose, JPEGRead, JPEGSeek,
-                            JPEGDrawContained)) {
-                Serial.println(
-                  "Decoded headers successfully, opening image viewer");
-                gui.imageViewer(result, &jpeg);
-                alreadyUseExplorer = true;
-              }
-            } else {
-              exitFileExplorer = true;
-            }
-          }
+          fileExplorerAndApps();
           break;
         }
         case 2: {
@@ -368,7 +376,7 @@ void loop() {
                 exitCameraSettingOptionsMenu = true;
                 break;
               }
-              case 1: {  // light mode
+              case 1: { // light mode
                 bool exitCameraLightModeOptionsMenu = false;
                 uint8_t selected = 1;
                 for (uint8_t i = 0; i < cameraLightModeOptionsCount; i++) {
@@ -380,12 +388,12 @@ void loop() {
                 }
                 while (!exitCameraLightModeOptionsMenu) {
                   const uint8_t result = gui.menu(
-                    cameraLightModeOptionsTitle, cameraLightModeOptionsMenu,
-                    cameraLightModeOptionsCount, selected);
+                      cameraLightModeOptionsTitle, cameraLightModeOptionsMenu,
+                      cameraLightModeOptionsCount, selected);
                   if (result > 0) {
                     selected = result;
                     arduCamera.setLightMode(
-                      cameraLightModeOptionsValues[selected]);
+                        cameraLightModeOptionsValues[selected]);
                     const size_t bufSize = 32;
                     char buf[bufSize];
                     char buf2[bufSize];
@@ -401,7 +409,7 @@ void loop() {
                 }
                 break;
               }
-              case 2: {  // saturation
+              case 2: { // saturation
                 bool exitCameraSaturationOptionsMenu = false;
                 uint8_t selected = 1;
                 for (uint8_t i = 0; i < cameraSaturationOptionsCount; i++) {
@@ -413,12 +421,12 @@ void loop() {
                 }
                 while (!exitCameraSaturationOptionsMenu) {
                   const uint8_t result = gui.menu(
-                    cameraSaturationOptionsTitle, cameraSaturationOptionsMenu,
-                    cameraSaturationOptionsCount, selected);
+                      cameraSaturationOptionsTitle, cameraSaturationOptionsMenu,
+                      cameraSaturationOptionsCount, selected);
                   if (result > 0) {
                     selected = result;
                     arduCamera.setSaturation(
-                      cameraSaturationOptionsValues[selected]);
+                        cameraSaturationOptionsValues[selected]);
                     const size_t bufSize = 32;
                     char buf[bufSize];
                     char buf2[bufSize];
@@ -434,7 +442,7 @@ void loop() {
                 }
                 break;
               }
-              case 3: {  // brightness
+              case 3: { // brightness
                 bool exitCameraBrightnessOptionsMenu = false;
                 uint8_t selected = 1;
                 for (uint8_t i = 0; i < cameraBrightnessOptionsCount; i++) {
@@ -446,12 +454,12 @@ void loop() {
                 }
                 while (!exitCameraBrightnessOptionsMenu) {
                   const uint8_t result = gui.menu(
-                    cameraBrightnessOptionsTitle, cameraBrightnessOptionsMenu,
-                    cameraBrightnessOptionsCount, selected);
+                      cameraBrightnessOptionsTitle, cameraBrightnessOptionsMenu,
+                      cameraBrightnessOptionsCount, selected);
                   if (result > 0) {
                     selected = result;
                     arduCamera.setBrightness(
-                      cameraBrightnessOptionsValues[selected]);
+                        cameraBrightnessOptionsValues[selected]);
                     const size_t bufSize = 32;
                     char buf[bufSize];
                     char buf2[bufSize];
@@ -467,7 +475,7 @@ void loop() {
                 }
                 break;
               }
-              case 4: {  // contrast
+              case 4: { // contrast
                 bool exitCameraContrastOptionsMenu = false;
                 uint8_t selected = 1;
                 for (uint8_t i = 0; i < cameraContrastOptionsCount; i++) {
@@ -479,12 +487,12 @@ void loop() {
                 }
                 while (!exitCameraContrastOptionsMenu) {
                   const uint8_t result = gui.menu(
-                    cameraContrastOptionsTitle, cameraContrastOptionsMenu,
-                    cameraContrastOptionsCount, selected);
+                      cameraContrastOptionsTitle, cameraContrastOptionsMenu,
+                      cameraContrastOptionsCount, selected);
                   if (result > 0) {
                     selected = result;
                     arduCamera.setContrast(
-                      cameraContrastOptionsValues[selected]);
+                        cameraContrastOptionsValues[selected]);
                     const size_t bufSize = 32;
                     char buf[bufSize];
                     char buf2[bufSize];
@@ -499,7 +507,7 @@ void loop() {
                 }
                 break;
               }
-              case 5: {  // special effect
+              case 5: { // special effect
                 bool exitCameraSpecialEffectOptionsMenu = false;
                 uint8_t selected = 1;
                 for (uint8_t i = 0; i < cameraSpecialEffectOptionsCount; i++) {
@@ -511,13 +519,13 @@ void loop() {
                 }
                 while (!exitCameraSpecialEffectOptionsMenu) {
                   const uint8_t result =
-                    gui.menu(cameraSpecialEffectOptionsTitle,
-                             cameraSpecialEffectOptionsMenu,
-                             cameraSpecialEffectOptionsCount, selected);
+                      gui.menu(cameraSpecialEffectOptionsTitle,
+                               cameraSpecialEffectOptionsMenu,
+                               cameraSpecialEffectOptionsCount, selected);
                   if (result > 0) {
                     selected = result;
                     arduCamera.setSpecialEffect(
-                      cameraSpecialEffectOptionsValues[selected]);
+                        cameraSpecialEffectOptionsValues[selected]);
                     const size_t bufSize = 32;
                     char buf[bufSize];
                     char buf2[bufSize];
@@ -533,7 +541,7 @@ void loop() {
                 }
                 break;
               }
-              case 6: {  // reset
+              case 6: { // reset
                 arduCamera.resetCameraSettings();
                 gui.setBottomText("Reset all settings!", 3000);
                 exitCameraSettingOptionsMenu = true;
@@ -558,11 +566,11 @@ void loop() {
     gui.setBottomText("Taking photo...", UNLIMITED_BOTTOM_TEXT_TIME);
     gui.drawBottomToolbar();
     arduCamera.setImageSize(captureImageSize);
-    for (uint8_t i = 0; i < 3; i ++) {
+    for (uint8_t i = 0; i < 3; i++) {
       STATUS_HIGH();
-      delay(1000/6);
+      delay(1000 / 6);
       STATUS_LOW();
-      delay(1000/6);
+      delay(1000 / 6);
     }
     STATUS_HIGH();
     const size_t MAX_PATH_SIZE = 255;
@@ -573,14 +581,7 @@ void loop() {
     STATUS_LOW();
     delay(1000);
     if (selectButton.pressed()) {
-      if (jpeg.open(filename, JPEGOpen, JPEGClose, JPEGRead, JPEGSeek,
-                            JPEGDrawContained)) {
-        Serial.println(
-          "Decoded headers successfully, opening image viewer");
-        gui.imageViewer(filename, &jpeg);
-      } else {
-        gui.setBottomText("Error opening photo!", 3000);
-      }
+      fileExplorerAndApps(filename);
     }
     if (result > 0) {
       gui.setBottomText("Photo saved!", 3000);
