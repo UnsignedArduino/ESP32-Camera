@@ -1,5 +1,5 @@
-#include <Arduino.h>
 #include "ESP32_Camera_GUI.h"
+#include <Arduino.h>
 
 bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
                                   size_t resultSize, int32_t startingFileIndex,
@@ -15,7 +15,7 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
   const char* fileExplorerDeleteOptionsTitle = "Delete file?";
   const uint8_t fileExplorerDeleteOptionsCount = 2;
   const char* fileExplorerDeleteOptions[fileExplorerDeleteOptionsCount] = {
-    "No", "Yes"};
+      "No", "Yes"};
 
   uint32_t fileCount;
 
@@ -75,7 +75,7 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
     uint32_t lastMovedTime = millis();
     const bool showScrollbar = fileCount > maxEntryPerPage;
     const uint8_t maxCharPerRow =
-      (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
+        (boxWidth / charWidth) - (showScrollbar ? 1 : 0);
     const uint8_t maxCharInTitle = boxWidth / charWidth - 3;
 
     const uint8_t fontX = boxX + charWidth / 2;
@@ -117,7 +117,7 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
                   lastSelected, lastOffset);
     Serial.printf("Selected index is %d, offset is %d\n", selected, offset);
     selected =
-      constrain(selected, 0, (int32_t)min(fileCount, (uint32_t)0x7FFFFFFF));
+        constrain(selected, 0, (int32_t)min(fileCount, (uint32_t)0x7FFFFFFF));
     if (selected >= offset + maxEntryPerPage) {
       offset += selected - (offset + maxEntryPerPage) + 1;
     } else if (selected < offset) {
@@ -202,10 +202,10 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
 
       if (showScrollbar) {
         const uint8_t startY =
-          map(min((int16_t)offset, (int16_t)(fileCount - maxEntryPerPage)), 0,
-              fileCount, scrollBarY, scrollBarY + scrollBarHeight);
+            map(min((int16_t)offset, (int16_t)(fileCount - maxEntryPerPage)), 0,
+                fileCount, scrollBarY, scrollBarY + scrollBarHeight);
         const uint8_t barHeight =
-          map(maxEntryPerPage, 0, fileCount, 0, scrollBarHeight);
+            map(maxEntryPerPage, 0, fileCount, 0, scrollBarHeight);
 
         this->tft->fillRect(scrollBarX, scrollBarY, scrollBarWidth,
                             scrollBarHeight, boxColor);
@@ -495,6 +495,40 @@ bool ESP32CameraGUI::getFileNameFromIndex(const char* start, uint32_t index,
   if (file.isDir()) {
     strncat(result, "/", resultSize);
   }
+
+  file.close();
+  dir.close();
+
+  return true;
+}
+
+bool ESP32CameraGUI::getIndexFromFileName(const char* start,
+                                          const char* filename,
+                                          uint32_t* result) {
+  FsFile dir = this->sd->open(start, O_RDONLY);
+  if (!dir) {
+    return false;
+  }
+
+  FsFile file;
+  dir.rewindDirectory();
+
+  uint32_t i = 0;
+
+  const size_t MAX_PATH_SIZE = 255;
+  char currName[MAX_PATH_SIZE];
+
+  while (strcmp(currName, filename) != 0) {
+    if (!file.openNext(&dir, O_RDONLY)) {
+      return false;
+    }
+    file.getName(currName, MAX_PATH_SIZE);
+    if (!file.isHidden() && strlen(currName) > 0) {
+      i++;
+    }
+  }
+
+  *result = ++i;
 
   file.close();
   dir.close();

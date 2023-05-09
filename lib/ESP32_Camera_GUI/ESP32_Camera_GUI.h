@@ -1,15 +1,15 @@
 #pragma once
 
 #include <Arduino.h>
-#include <TFT_eSPI.h>
 #include <SdFat.h>
+#include <TFT_eSPI.h>
 
 // #define File FsFile
 typedef FsFile File;
 
+#include <Button.h>
 #include <JPEGDEC.h>
 #include <RTClib.h>
-#include <Button.h>
 
 const uint32_t BOTTOM_TOOLBAR_DRAW_THROTTLE = 1000;
 const uint32_t UNLIMITED_BOTTOM_TEXT_TIME = 0xFFFFFFFF;
@@ -44,6 +44,8 @@ class ESP32CameraGUI {
     bool getFileCount(const char* start, uint32_t& result);
     bool getFileNameFromIndex(const char* start, uint32_t index, char* result,
                               size_t resultSize);
+    bool getIndexFromFileName(const char* start, const char* filename,
+                              uint32_t* result);
 
     uint8_t getBattPercent();
 

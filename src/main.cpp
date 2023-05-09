@@ -259,11 +259,37 @@ void fileExplorerAndApps(const char* preselectPath = NULL) {
   int32_t startingOffset = 0;
   char endingDirectory[MAX_PATH_SIZE];
   memset(endingDirectory, 0, MAX_PATH_SIZE);
+  bool alreadyUseExplorer = false;
   if (preselectPath != NULL) {
     Serial.print("Preselecting: ");
     Serial.println(preselectPath);
+
+    char* lastSlash = strrchr(preselectPath, '/');
+
+    char directory[MAX_PATH_SIZE];
+    memset(directory, 0, MAX_PATH_SIZE);
+    strncpy(directory, preselectPath, lastSlash - preselectPath);
+
+    char filename[MAX_PATH_SIZE];
+    memset(filename, 0, MAX_PATH_SIZE);
+    strncpy(filename, lastSlash + 1, MAX_PATH_SIZE);
+
+    Serial.print("Directory: ");
+    Serial.println(directory);
+    Serial.print("Filename: ");
+    Serial.println(filename);
+
+    uint32_t index = 0;
+
+    if (gui.getIndexFromFileName(directory, filename, &index)) {
+      Serial.print("File index: ");
+      Serial.println(index);
+
+      alreadyUseExplorer = true;
+      strncpy(endingDirectory, directory, MAX_PATH_SIZE);
+      startingIndex = index;
+    }
   }
-  bool alreadyUseExplorer = false;
   while (!exitFileExplorer) {
     if (gui.fileExplorer(alreadyUseExplorer ? endingDirectory : "/", result,
                          MAX_PATH_SIZE, startingIndex, startingOffset,
@@ -580,9 +606,6 @@ void loop() {
     arduCamera.setImageSize(previewImageSize);
     STATUS_LOW();
     delay(1000);
-    if (selectButton.pressed()) {
-      fileExplorerAndApps(filename);
-    }
     if (result > 0) {
       gui.setBottomText("Photo saved!", 3000);
     } else if (result == CAMERA_ERROR) {
@@ -591,6 +614,9 @@ void loop() {
       gui.setBottomText("Failed to write to disk!", 3000);
     } else {
       gui.setBottomText("Unknown error!", 3000);
+    }
+    if (selectButton.pressed()) {
+      fileExplorerAndApps(filename);
     }
   }
 

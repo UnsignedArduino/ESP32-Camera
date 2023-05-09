@@ -105,27 +105,27 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #if defined(RASPBERRY_PI)
 #else
 #include "Arduino.h"
-#include <pins_arduino.h>
 #include "memorysaver.h"
 #include <SPI.h>
+#include <pins_arduino.h>
 #endif
 
 #if defined(__AVR__)
 #define cbi(reg, bitmask) *reg &= ~bitmask
 #define sbi(reg, bitmask) *reg |= bitmask
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 #define fontbyte(x) pgm_read_byte(&cfont.font[x])
 #define regtype volatile uint8_t
@@ -137,21 +137,21 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #define cbi(reg, bitmask) *reg &= ~bitmask
 #define sbi(reg, bitmask) *reg |= bitmask
 
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
 
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 #define fontbyte(x) cfont.font[x]
 
@@ -160,13 +160,13 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 
 #define PROGMEM
 
-#define pgm_read_byte(x) (*((char *)x))
-#define pgm_read_word(x) \
-  (((*((unsigned char *)x + 1)) << 8) + (*((unsigned char *)x)))
-#define pgm_read_byte_near(x) (*((char *)x))
-#define pgm_read_byte_far(x) (*((char *)x))
-#define pgm_read_word_near(x) \
-  (((*((unsigned char *)x + 1)) << 8) + (*((unsigned char *)x)))
+#define pgm_read_byte(x) (*((char*)x))
+#define pgm_read_word(x)                                                       \
+  (((*((unsigned char*)x + 1)) << 8) + (*((unsigned char*)x)))
+#define pgm_read_byte_near(x) (*((char*)x))
+#define pgm_read_byte_far(x) (*((char*)x))
+#define pgm_read_word_near(x)                                                  \
+  (((*((unsigned char*)x + 1)) << 8) + (*((unsigned char*)x)))
 #define pgm_read_word_far(x)    ( ((*((unsigned char *)x + 1)) << 8) + (*((unsigned char *)x))))
 #define PSTR(x) x
 #if defined F
@@ -178,21 +178,21 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #if defined(ESP8266)
 #define cbi(reg, bitmask) digitalWrite(bitmask, LOW)
 #define sbi(reg, bitmask) digitalWrite(bitmask, HIGH)
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
 
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 
 #define fontbyte(x) cfont.font[x]
@@ -207,21 +207,21 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #define cbi(reg, bitmask) *reg &= ~bitmask
 #define sbi(reg, bitmask) *reg |= bitmask
 
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
 
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 #define fontbyte(x) cfont.font[x]
 
@@ -232,22 +232,22 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #if defined(ESP32)
 #define cbi(reg, bitmask) digitalWrite(bitmask, LOW)
 #define sbi(reg, bitmask) digitalWrite(bitmask, HIGH)
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
 
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
-  }
+// #define swap(type, i, j) \
+//   {                      \
+//     type t = i;          \
+//     i = j;               \
+//     j = t;               \
+//   }
 
 #define fontbyte(x) cfont.font[x]
 
@@ -258,19 +258,19 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #if defined(__CPU_ARC__)
 #define cbi(reg, bitmask) *reg &= ~bitmask
 #define sbi(reg, bitmask) *reg |= bitmask
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 #define fontbyte(x) pgm_read_byte(&cfont.font[x])
 #define regtype volatile uint32_t
@@ -295,21 +295,21 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #if defined(ARDUINO_ARCH_NRF52)
 #define cbi(reg, bitmask) digitalWrite(bitmask, LOW)
 #define sbi(reg, bitmask) digitalWrite(bitmask, HIGH)
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
 
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 
 #define fontbyte(x) cfont.font[x]
@@ -322,19 +322,19 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #if defined(TEENSYDUINO)
 #define cbi(reg, bitmask) digitalWriteFast(bitmask, LOW)
 #define sbi(reg, bitmask) digitalWriteFast(bitmask, HIGH)
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 #define fontbyte(x) cfont.font[x]
 #define regtype volatile uint8_t
@@ -346,21 +346,21 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #define cbi(reg, bitmask) digitalWrite(bitmask, LOW)
 #define sbi(reg, bitmask) digitalWrite(bitmask, HIGH)
 
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
 
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 #define fontbyte(x) cfont.font[x]
 
@@ -379,21 +379,21 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #define cbi(reg, bitmask) *reg &= ~bitmask
 #define sbi(reg, bitmask) *reg |= bitmask
 
-#define pulse_high(reg, bitmask) \
-  sbi(reg, bitmask);             \
+#define pulse_high(reg, bitmask)                                               \
+  sbi(reg, bitmask);                                                           \
   cbi(reg, bitmask);
-#define pulse_low(reg, bitmask) \
-  cbi(reg, bitmask);            \
+#define pulse_low(reg, bitmask)                                                \
+  cbi(reg, bitmask);                                                           \
   sbi(reg, bitmask);
 
 #define cport(port, data) port &= data
 #define sport(port, data) port |= data
 
-#define swap(type, i, j) \
-  {                      \
-    type t = i;          \
-    i = j;               \
-    j = t;               \
+#define swap(type, i, j)                                                       \
+  {                                                                            \
+    type t = i;                                                                \
+    i = j;                                                                     \
+    j = t;                                                                     \
   }
 #define fontbyte(x) cfont.font[x]
 #define regtype volatile uint32_t
@@ -428,44 +428,44 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 #define MT9V034 17
 #define MT9M034 18
 
-#define OV2640_160x120 0    // 160x120
-#define OV2640_176x144 1    // 176x144
-#define OV2640_320x240 2    // 320x240
-#define OV2640_352x288 3    // 352x288
-#define OV2640_640x480 4    // 640x480
-#define OV2640_800x600 5    // 800x600
-#define OV2640_1024x768 6   // 1024x768
-#define OV2640_1280x1024 7  // 1280x1024
-#define OV2640_1600x1200 8  // 1600x1200
+#define OV2640_160x120 0   // 160x120
+#define OV2640_176x144 1   // 176x144
+#define OV2640_320x240 2   // 320x240
+#define OV2640_352x288 3   // 352x288
+#define OV2640_640x480 4   // 640x480
+#define OV2640_800x600 5   // 800x600
+#define OV2640_1024x768 6  // 1024x768
+#define OV2640_1280x1024 7 // 1280x1024
+#define OV2640_1600x1200 8 // 1600x1200
 
-#define OV3640_176x144 0    // 176x144
-#define OV3640_320x240 1    // 320x240
-#define OV3640_352x288 2    // 352x288
-#define OV3640_640x480 3    // 640x480
-#define OV3640_800x600 4    // 800x600
-#define OV3640_1024x768 5   // 1024x768
-#define OV3640_1280x960 6   // 1280x960
-#define OV3640_1600x1200 7  // 1600x1200
-#define OV3640_2048x1536 8  // 2048x1536
+#define OV3640_176x144 0   // 176x144
+#define OV3640_320x240 1   // 320x240
+#define OV3640_352x288 2   // 352x288
+#define OV3640_640x480 3   // 640x480
+#define OV3640_800x600 4   // 800x600
+#define OV3640_1024x768 5  // 1024x768
+#define OV3640_1280x960 6  // 1280x960
+#define OV3640_1600x1200 7 // 1600x1200
+#define OV3640_2048x1536 8 // 2048x1536
 
-#define OV5642_320x240 0    // 320x240
-#define OV5642_640x480 1    // 640x480
-#define OV5642_1024x768 2   // 1024x768
-#define OV5642_1280x960 3   // 1280x960
-#define OV5642_1600x1200 4  // 1600x1200
-#define OV5642_2048x1536 5  // 2048x1536
-#define OV5642_2592x1944 6  // 2592x1944
+#define OV5642_320x240 0   // 320x240
+#define OV5642_640x480 1   // 640x480
+#define OV5642_1024x768 2  // 1024x768
+#define OV5642_1280x960 3  // 1280x960
+#define OV5642_1600x1200 4 // 1600x1200
+#define OV5642_2048x1536 5 // 2048x1536
+#define OV5642_2592x1944 6 // 2592x1944
 #define OV5642_1920x1080 7
 
-#define OV5640_320x240 0    // 320x240
-#define OV5640_352x288 1    // 352x288
-#define OV5640_640x480 2    // 640x480
-#define OV5640_800x480 3    // 800x480
-#define OV5640_1024x768 4   // 1024x768
-#define OV5640_1280x960 5   // 1280x960
-#define OV5640_1600x1200 6  // 1600x1200
-#define OV5640_2048x1536 7  // 2048x1536
-#define OV5640_2592x1944 8  // 2592x1944
+#define OV5640_320x240 0   // 320x240
+#define OV5640_352x288 1   // 352x288
+#define OV5640_640x480 2   // 640x480
+#define OV5640_800x480 3   // 800x480
+#define OV5640_1024x768 4  // 1024x768
+#define OV5640_1280x960 5  // 1280x960
+#define OV5640_1600x1200 6 // 1600x1200
+#define OV5640_2048x1536 7 // 2048x1536
+#define OV5640_2592x1944 8 // 2592x1944
 
 // Light Mode
 
@@ -629,47 +629,44 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 
 // Define maximum frame buffer size
 #if (defined OV2640_MINI_2MP)
-#define MAX_FIFO_SIZE 0x5FFFF  // 384KByte
-#elif (defined OV5642_MINI_5MP ||                    \
-       defined OV5642_MINI_5MP_BIT_ROTATION_FIXED || \
+#define MAX_FIFO_SIZE 0x5FFFF // 384KByte
+#elif (defined OV5642_MINI_5MP ||                                              \
+       defined OV5642_MINI_5MP_BIT_ROTATION_FIXED ||                           \
        defined ARDUCAM_SHIELD_REVC)
-#define MAX_FIFO_SIZE 0x7FFFF  // 512KByte
+#define MAX_FIFO_SIZE 0x7FFFF // 512KByte
 #else
-#define MAX_FIFO_SIZE 0x7FFFFF  // 8MByte
+#define MAX_FIFO_SIZE 0x7FFFFF // 8MByte
 #endif
 
 /****************************************************/
 /* ArduChip registers definition
  */
 /****************************************************/
-#define RWBIT 0x80  // READ AND WRITE BIT IS BIT[7]
+#define RWBIT 0x80 // READ AND WRITE BIT IS BIT[7]
 
-#define ARDUCHIP_TEST1 0x00  // TEST register
+#define ARDUCHIP_TEST1 0x00 // TEST register
 
 #if !(defined OV2640_MINI_2MP)
-#define ARDUCHIP_FRAMES \
-  0x01  // FRAME control register, Bit[2:0] = Number of frames to be captured
-        // //On 5MP_Plus platforms bit[2:0] = 7 means continuous capture until
-        // frame buffer is full
+#define ARDUCHIP_FRAMES                                                        \
+  0x01 // FRAME control register, Bit[2:0] = Number of frames to be captured
+       // //On 5MP_Plus platforms bit[2:0] = 7 means continuous capture until
+       // frame buffer is full
 #endif
 
-#define ARDUCHIP_MODE 0x02  // Mode register
+#define ARDUCHIP_MODE 0x02 // Mode register
 #define MCU2LCD_MODE 0x00
 #define CAM2LCD_MODE 0x01
 #define LCD2MCU_MODE 0x02
 
-#define ARDUCHIP_TIM 0x03  // Timming control
+#define ARDUCHIP_TIM 0x03 // Timming control
 #if !(defined OV2640_MINI_2MP)
-#define HREF_LEVEL_MASK 0x01   // 0 = High active , 		1 = Low active
-#define VSYNC_LEVEL_MASK 0x02  // 0 = High active , 		1 = Low active
-#define LCD_BKEN_MASK \
-  0x04  // 0 = Enable, 					1 = Disable
+#define HREF_LEVEL_MASK 0x01  // 0 = High active , 		1 = Low active
+#define VSYNC_LEVEL_MASK 0x02 // 0 = High active , 		1 = Low active
+#define LCD_BKEN_MASK 0x04    // 0 = Enable, 					1 = Disable
 #if (defined ARDUCAM_SHIELD_V2)
-#define PCLK_REVERSE_MASK \
-  0x08  // 0 = Normal PCLK, 		1 = REVERSED PCLK
+#define PCLK_REVERSE_MASK 0x08 // 0 = Normal PCLK, 		1 = REVERSED PCLK
 #else
-#define PCLK_DELAY_MASK \
-  0x08  // 0 = data no delay,		1 = data delayed one PCLK
+#define PCLK_DELAY_MASK 0x08 // 0 = data no delay,		1 = data delayed one PCLK
 #endif
 // #define MODE_MASK          		0x10  //0 = LCD mode,
 // 1 = FIFO mode
@@ -679,37 +676,35 @@ functions. 2017/07/07  V4.1.0  by Lee	Add support for ArduCAM_ESP32 paltform
 // #define LOW_POWER_MODE			  0x40  	//0 = Normal
 // mode, 1 = Low power mode
 
-#define ARDUCHIP_FIFO 0x04  // FIFO and I2C control
+#define ARDUCHIP_FIFO 0x04 // FIFO and I2C control
 #define FIFO_CLEAR_MASK 0x01
 #define FIFO_START_MASK 0x02
 #define FIFO_RDPTR_RST_MASK 0x10
 #define FIFO_WRPTR_RST_MASK 0x20
 
-#define ARDUCHIP_GPIO 0x06  // GPIO Write Register
+#define ARDUCHIP_GPIO 0x06 // GPIO Write Register
 #if !(defined(ARDUCAM_SHIELD_V2) || defined(ARDUCAM_SHIELD_REVC))
-#define GPIO_RESET_MASK \
-  0x01  // 0 = Sensor reset, 1 = Sensor normal operation
-#define GPIO_PWDN_MASK \
-  0x02  // 0 = Sensor normal operation, 	1 = Sensor standby
-#define GPIO_PWREN_MASK \
-  0x04  // 0 = Sensor LDO disable, 			1 = sensor LDO enable
+#define GPIO_RESET_MASK 0x01 // 0 = Sensor reset, 1 = Sensor normal operation
+#define GPIO_PWDN_MASK 0x02  // 0 = Sensor normal operation, 	1 = Sensor standby
+#define GPIO_PWREN_MASK                                                        \
+  0x04 // 0 = Sensor LDO disable, 			1 = sensor LDO enable
 #endif
 
-#define BURST_FIFO_READ 0x3C   // Burst FIFO read operation
-#define SINGLE_FIFO_READ 0x3D  // Single FIFO read operation
+#define BURST_FIFO_READ 0x3C  // Burst FIFO read operation
+#define SINGLE_FIFO_READ 0x3D // Single FIFO read operation
 
-#define ARDUCHIP_REV 0x40  // ArduCHIP revision
+#define ARDUCHIP_REV 0x40 // ArduCHIP revision
 #define VER_LOW_MASK 0x3F
 #define VER_HIGH_MASK 0xC0
 
-#define ARDUCHIP_TRIG 0x41  // Trigger source
+#define ARDUCHIP_TRIG 0x41 // Trigger source
 #define VSYNC_MASK 0x01
 #define SHUTTER_MASK 0x02
 #define CAP_DONE_MASK 0x08
 
-#define FIFO_SIZE1 0x42  // Camera write FIFO size[7:0] for burst to read
-#define FIFO_SIZE2 0x43  // Camera write FIFO size[15:8]
-#define FIFO_SIZE3 0x44  // Camera write FIFO size[18:16]
+#define FIFO_SIZE1 0x42 // Camera write FIFO size[7:0] for burst to read
+#define FIFO_SIZE2 0x43 // Camera write FIFO size[15:8]
+#define FIFO_SIZE3 0x44 // Camera write FIFO size[18:16]
 
 /****************************************************/
 
@@ -729,7 +724,7 @@ class ArduCAM {
   public:
     ArduCAM(void);
     ArduCAM(byte model, int CS);
-    void setSpiBus(SPIClass *bus);
+    void setSpiBus(SPIClass* bus);
 
     void InitCAM();
 
@@ -756,32 +751,32 @@ class ArduCAM {
     uint8_t bus_read(int address);
 
     // Write 8 bit values to 8 bit register address
-    int wrSensorRegs8_8(const struct sensor_reg *);
+    int wrSensorRegs8_8(const struct sensor_reg*);
 
     // Write 16 bit values to 8 bit register address
-    int wrSensorRegs8_16(const struct sensor_reg *);
+    int wrSensorRegs8_16(const struct sensor_reg*);
 
     // Write 8 bit values to 16 bit register address
-    int wrSensorRegs16_8(const struct sensor_reg *);
+    int wrSensorRegs16_8(const struct sensor_reg*);
 
     // Write 16 bit values to 16 bit register address
-    int wrSensorRegs16_16(const struct sensor_reg *);
+    int wrSensorRegs16_16(const struct sensor_reg*);
 
     // Read/write 8 bit value to/from 8 bit register address
     byte wrSensorReg8_8(int regID, int regDat);
-    byte rdSensorReg8_8(uint8_t regID, uint8_t *regDat);
+    byte rdSensorReg8_8(uint8_t regID, uint8_t* regDat);
 
     // Read/write 16 bit value to/from 8 bit register address
     byte wrSensorReg8_16(int regID, int regDat);
-    byte rdSensorReg8_16(uint8_t regID, uint16_t *regDat);
+    byte rdSensorReg8_16(uint8_t regID, uint16_t* regDat);
 
     // Read/write 8 bit value to/from 16 bit register address
     byte wrSensorReg16_8(int regID, int regDat);
-    byte rdSensorReg16_8(uint16_t regID, uint8_t *regDat);
+    byte rdSensorReg16_8(uint16_t regID, uint8_t* regDat);
 
     // Read/write 16 bit value to/from 16 bit register address
     byte wrSensorReg16_16(int regID, int regDat);
-    byte rdSensorReg16_16(uint16_t regID, uint16_t *regDat);
+    byte rdSensorReg16_16(uint16_t regID, uint16_t* regDat);
 
     void OV2640_set_JPEG_size(uint8_t size);
     void OV3640_set_JPEG_size(uint8_t size);
@@ -834,20 +829,20 @@ class ArduCAM {
 
 #if defined(RASPBERRY_PI)
     uint8_t transfer(uint8_t data);
-    void transfers(uint8_t *buf, uint32_t size);
+    void transfers(uint8_t* buf, uint32_t size);
 #endif
 
-    void transferBytes_(uint8_t *out, uint8_t *in, uint8_t size);
-    void transferBytes(uint8_t *out, uint8_t *in, uint32_t size);
+    void transferBytes_(uint8_t* out, uint8_t* in, uint8_t size);
+    void transferBytes(uint8_t* out, uint8_t* in, uint32_t size);
     inline void setDataBits(uint16_t bits);
 
   protected:
-    regtype *P_CS;
+    regtype* P_CS;
     regsize B_CS;
     byte m_fmt;
     byte sensor_model;
     byte sensor_addr;
-    SPIClass *spiBus;
+    SPIClass* spiBus;
 };
 
 #if defined OV7660_CAM
@@ -866,8 +861,8 @@ class ArduCAM {
 #include "ov7675_regs.h"
 #endif
 
-#if (defined(OV5642_CAM) || defined(OV5642_MINI_5MP) || \
-     defined(OV5642_MINI_5MP_BIT_ROTATION_FIXED) ||     \
+#if (defined(OV5642_CAM) || defined(OV5642_MINI_5MP) ||                        \
+     defined(OV5642_MINI_5MP_BIT_ROTATION_FIXED) ||                            \
      defined(OV5642_MINI_5MP_PLUS))
 #include "ov5642_regs.h"
 #endif
@@ -876,7 +871,7 @@ class ArduCAM {
 #include "ov3640_regs.h"
 #endif
 
-#if (defined(OV2640_CAM) || defined(OV2640_MINI_2MP) || \
+#if (defined(OV2640_CAM) || defined(OV2640_MINI_2MP) ||                        \
      defined(OV2640_MINI_2MP_PLUS))
 #include "ov2640_regs.h"
 #endif
