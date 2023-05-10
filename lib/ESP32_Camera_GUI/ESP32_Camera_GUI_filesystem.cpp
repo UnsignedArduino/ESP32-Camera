@@ -56,6 +56,10 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
   const uint8_t extraOptionsCount = 2;
   const char* extraOptions[extraOptionsCount] = {"Exit", "Up a folder"};
 
+  bool isRoot = false;
+  const uint8_t extraRootOptionsCount = 1;
+  const char* extraRootOptions[extraOptionsCount] = {"Exit"};
+
   while (true) {
     char menuEntries[maxEntryPerPage][MAX_PATH_SIZE];
     memset(menuEntries, 0, maxEntryPerPage * MAX_PATH_SIZE);
@@ -68,7 +72,9 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
 
     Serial.printf("%lu files in %s\n", fileCount, currentDirectory);
 
-    fileCount += extraOptionsCount;
+    isRoot = strcmp(currentDirectory, "/") == 0;
+
+    fileCount += isRoot ? extraRootOptionsCount : extraOptionsCount;
 
     uint32_t selectedTime = millis();
     uint32_t lastPressTime = millis();
@@ -144,47 +150,94 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
         for (uint32_t i = offset;
              i < min((uint16_t)fileCount, (uint16_t)(offset + maxEntryPerPage));
              i++) {
-          if (i < extraOptionsCount) {
-            strncpy(menuEntries[i - offset], extraOptions[i], MAX_PATH_SIZE);
+          if (isRoot) {
+            if (i < extraRootOptionsCount) {
+              strncpy(menuEntries[i - offset], extraRootOptions[i], MAX_PATH_SIZE);
+            } else {
+              strncpy(menuEntries[i - offset], "Could not read file!",
+                      MAX_PATH_SIZE);
+              File file;
+              this->getFileFromIndex(currentDirectory, i - extraRootOptionsCount,
+                                     &file);
+              char* ptr = menuEntries[i - offset];
+              file.getName(ptr, MAX_PATH_SIZE);
+              if (file.isDir()) {
+                strncat(ptr, "/", MAX_PATH_SIZE);
+              };
+              // strncat(ptr, " ", MAX_PATH_SIZE);
+              // uint16_t date, time;
+              // if (file.getModifyDateTime(&date, &time)) {
+              //   char buf[sizeof("YYYY-MM-DD HH:MM") - 1];
+              //   char* str = buf + sizeof(buf);
+              //   if (date) {
+              //     str = fsFmtTime(str, time);
+              //     *--str = ' ';
+              //     str = fsFmtDate(str, date);
+              //   } else {
+              //     do {
+              //       *--str = ' ';
+              //     } while (str > buf);
+              //   }
+              //   for (uint8_t i = 0; i < strlen(buf); i++) {
+              //     if (buf[i] == '-') {
+              //       buf[i] = '/';
+              //     }
+              //   }
+              //   strncat(ptr, buf, MAX_PATH_SIZE);
+              // }
+              file.close();
+              // this->getFileNameFromIndex(currentDirectory, i -
+              // extraOptionsCount,
+              //                            menuEntries[i - offset],
+              //                            MAX_PATH_SIZE);
+              // Serial.printf("File at index %d (menu entry %d) is \"%s\"\n",
+              //               i - extraOptionsCount, i, menuEntries[i -
+              //               offset]);
+            }
           } else {
-            strncpy(menuEntries[i - offset], "Could not read file!",
-                    MAX_PATH_SIZE);
-            File file;
-            this->getFileFromIndex(currentDirectory, i - extraOptionsCount,
-                                   &file);
-            char* ptr = menuEntries[i - offset];
-            file.getName(ptr, MAX_PATH_SIZE);
-            if (file.isDir()) {
-              strncat(ptr, "/", MAX_PATH_SIZE);
-            };
-            // strncat(ptr, " ", MAX_PATH_SIZE);
-            // uint16_t date, time;
-            // if (file.getModifyDateTime(&date, &time)) {
-            //   char buf[sizeof("YYYY-MM-DD HH:MM") - 1];
-            //   char* str = buf + sizeof(buf);
-            //   if (date) {
-            //     str = fsFmtTime(str, time);
-            //     *--str = ' ';
-            //     str = fsFmtDate(str, date);
-            //   } else {
-            //     do {
-            //       *--str = ' ';
-            //     } while (str > buf);
-            //   }
-            //   for (uint8_t i = 0; i < strlen(buf); i++) {
-            //     if (buf[i] == '-') {
-            //       buf[i] = '/';
-            //     }
-            //   }
-            //   strncat(ptr, buf, MAX_PATH_SIZE);
-            // }
-            file.close();
-            // this->getFileNameFromIndex(currentDirectory, i -
-            // extraOptionsCount,
-            //                            menuEntries[i - offset],
-            //                            MAX_PATH_SIZE);
-            // Serial.printf("File at index %d (menu entry %d) is \"%s\"\n",
-            //               i - extraOptionsCount, i, menuEntries[i - offset]);
+            if (i < extraOptionsCount) {
+              strncpy(menuEntries[i - offset], extraOptions[i], MAX_PATH_SIZE);
+            } else {
+              strncpy(menuEntries[i - offset], "Could not read file!",
+                      MAX_PATH_SIZE);
+              File file;
+              this->getFileFromIndex(currentDirectory, i - extraOptionsCount,
+                                     &file);
+              char* ptr = menuEntries[i - offset];
+              file.getName(ptr, MAX_PATH_SIZE);
+              if (file.isDir()) {
+                strncat(ptr, "/", MAX_PATH_SIZE);
+              };
+              // strncat(ptr, " ", MAX_PATH_SIZE);
+              // uint16_t date, time;
+              // if (file.getModifyDateTime(&date, &time)) {
+              //   char buf[sizeof("YYYY-MM-DD HH:MM") - 1];
+              //   char* str = buf + sizeof(buf);
+              //   if (date) {
+              //     str = fsFmtTime(str, time);
+              //     *--str = ' ';
+              //     str = fsFmtDate(str, date);
+              //   } else {
+              //     do {
+              //       *--str = ' ';
+              //     } while (str > buf);
+              //   }
+              //   for (uint8_t i = 0; i < strlen(buf); i++) {
+              //     if (buf[i] == '-') {
+              //       buf[i] = '/';
+              //     }
+              //   }
+              //   strncat(ptr, buf, MAX_PATH_SIZE);
+              // }
+              file.close();
+              // this->getFileNameFromIndex(currentDirectory, i -
+              // extraOptionsCount,
+              //                            menuEntries[i - offset],
+              //                            MAX_PATH_SIZE);
+              // Serial.printf("File at index %d (menu entry %d) is \"%s\"\n",
+              //               i - extraOptionsCount, i, menuEntries[i -
+              //               offset]);
+            }
           }
         }
       }
@@ -303,23 +356,25 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
           break;
         }
         if (this->selectButton->pressed()) {
-          if (selected < extraOptionsCount) {
+          if (selected < extraOptionsCount && !isRoot || selected < extraRootOptionsCount && isRoot) {
             switch (selected) {
               default:
               case 0: {
                 return false;
               }
               case 1: {
-                char* last = strrchr(currentDirectory, '/');
-                if (last != 0) {
-                  last[1] = '\0';
+                if (!isRoot) {
+                  char* last = strrchr(currentDirectory, '/');
+                  if (last != 0) {
+                    last[1] = '\0';
+                  }
+                  if (currentDirectory[strlen(currentDirectory) - 1] == '/' &&
+                      strlen(currentDirectory) > 1) {
+                    currentDirectory[strlen(currentDirectory) - 1] = '\0';
+                  }
+                  Serial.printf("chdir to .. (%s)\n", currentDirectory);
+                  needToCompleteRedraw = true;
                 }
-                if (currentDirectory[strlen(currentDirectory) - 1] == '/' &&
-                    strlen(currentDirectory) > 1) {
-                  currentDirectory[strlen(currentDirectory) - 1] = '\0';
-                }
-                Serial.printf("chdir to .. (%s)\n", currentDirectory);
-                needToCompleteRedraw = true;
                 break;
               }
             }
