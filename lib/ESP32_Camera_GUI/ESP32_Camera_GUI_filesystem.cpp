@@ -58,6 +58,7 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
 
   while (true) {
     char menuEntries[maxEntryPerPage][MAX_PATH_SIZE];
+    memset(menuEntries, 0, maxEntryPerPage * MAX_PATH_SIZE);
     uint32_t menuEntryOffset = -1;
 
     // dir = sd.open(currentDirectory, O_RDONLY);
@@ -148,8 +149,40 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
           } else {
             strncpy(menuEntries[i - offset], "Could not read file!",
                     MAX_PATH_SIZE);
-            this->getFileNameFromIndex(currentDirectory, i - extraOptionsCount,
-                                       menuEntries[i - offset], MAX_PATH_SIZE);
+            File file;
+            this->getFileFromIndex(currentDirectory, i - extraOptionsCount,
+                                   &file);
+            char* ptr = menuEntries[i - offset];
+            file.getName(ptr, MAX_PATH_SIZE);
+            if (file.isDir()) {
+              strncat(ptr, "/", MAX_PATH_SIZE);
+            };
+            // strncat(ptr, " ", MAX_PATH_SIZE);
+            // uint16_t date, time;
+            // if (file.getModifyDateTime(&date, &time)) {
+            //   char buf[sizeof("YYYY-MM-DD HH:MM") - 1];
+            //   char* str = buf + sizeof(buf);
+            //   if (date) {
+            //     str = fsFmtTime(str, time);
+            //     *--str = ' ';
+            //     str = fsFmtDate(str, date);
+            //   } else {
+            //     do {
+            //       *--str = ' ';
+            //     } while (str > buf);
+            //   }
+            //   for (uint8_t i = 0; i < strlen(buf); i++) {
+            //     if (buf[i] == '-') {
+            //       buf[i] = '/';
+            //     }
+            //   }
+            //   strncat(ptr, buf, MAX_PATH_SIZE);
+            // }
+            file.close();
+            // this->getFileNameFromIndex(currentDirectory, i -
+            // extraOptionsCount,
+            //                            menuEntries[i - offset],
+            //                            MAX_PATH_SIZE);
             // Serial.printf("File at index %d (menu entry %d) is \"%s\"\n",
             //               i - extraOptionsCount, i, menuEntries[i - offset]);
           }
@@ -174,6 +207,22 @@ bool ESP32CameraGUI::fileExplorer(const char* startDirectory, char* result,
 
         if (i == selected) {
           this->tft->setTextColor(boxColor, textColor);
+
+          // char* lastToken = NULL;
+          // char* token = NULL;
+          // char* rest = selectedPath;
+
+          // while (true) {
+          //   lastToken = token;
+          //   token = strtok_r(rest, " ", &rest);
+          //   if (token == NULL) {
+          //     break;
+          //   }
+          // }
+
+          // Serial.print("Last token: ");
+          // Serial.println(lastToken);
+
           strncpy(selectedPath, current, MAX_PATH_SIZE);
           // Serial.printf("Selected file: \"%s\"\n", selectedPath);
         } else {
@@ -471,12 +520,15 @@ bool ESP32CameraGUI::getFileCount(const char* start, uint32_t& result) {
   }
 }
 
-bool ESP32CameraGUI::getFileNameFromIndex(const char* start, uint32_t index,
-                                          char* result, size_t resultSize) {
+bool ESP32CameraGUI::getFileFromIndex(const char* start, uint32_t index,
+                                      FsFile* result) {
   FsFile dir = this->sd->open(start, O_RDONLY);
   if (!dir) {
     return false;
   }
+
+  const size_t MAX_FILE_PATH = 255;
+  char filename[MAX_FILE_PATH];
 
   FsFile file;
   dir.rewindDirectory();
@@ -484,10 +536,26 @@ bool ESP32CameraGUI::getFileNameFromIndex(const char* start, uint32_t index,
     if (!file.openNext(&dir, O_RDONLY)) {
       return false;
     }
-    file.getName(result, resultSize);
-    if (!file.isHidden() && strlen(result) > 0) {
+    memset(filename, 0, MAX_FILE_PATH);
+    file.getName(filename, MAX_FILE_PATH);
+    if (!file.isHidden() && strlen(filename) > 0) {
       i++;
     }
+  }
+
+  *result = file;
+
+  dir.close();
+
+  return true;
+}
+
+bool ESP32CameraGUI::getFileNameFromIndex(const char* start, uint32_t index,
+                                          char* result, size_t resultSize) {
+  FsFile file;
+
+  if (!this->getFileFromIndex(start, index, &file)) {
+    return false;
   }
 
   file.getName(result, resultSize);
@@ -497,7 +565,6 @@ bool ESP32CameraGUI::getFileNameFromIndex(const char* start, uint32_t index,
   }
 
   file.close();
-  dir.close();
 
   return true;
 }

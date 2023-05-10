@@ -42,6 +42,7 @@ class ESP32CameraGUI {
     void drawBottomToolbar(bool forceDraw = false);
 
     bool getFileCount(const char* start, uint32_t& result);
+    bool getFileFromIndex(const char* start, uint32_t index, FsFile* result);
     bool getFileNameFromIndex(const char* start, uint32_t index, char* result,
                               size_t resultSize);
     bool getIndexFromFileName(const char* start, const char* filename,

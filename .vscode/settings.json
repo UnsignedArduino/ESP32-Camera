@@ -3,6 +3,7 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "ms-vscode.cpptools",
   "files.associations": {
-    "type_traits": "cpp"
+    "type_traits": "cpp",
+    "sstream": "cpp"
   }
 }
